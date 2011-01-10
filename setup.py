@@ -3,7 +3,7 @@ import os
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.txt')).read()
+README = open(os.path.join(here, 'README.md')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = ['pymongo']
@@ -16,15 +16,12 @@ setup(name='minimongo',
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python",
-        "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
-        "Topic :: Internet :: WWW/HTTP :: WSGI",
-        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+        "Topic :: Database",
         ],
       author='Steve Lacy',
       author_email='slacy@slacy.com',
       url='http://slacy.com/blog',
-      keywords='web wsgi pylons pyramid',
+      keywords=['mongo', 'mongodb', 'pymongo', 'orm'],
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,

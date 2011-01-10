@@ -2,7 +2,7 @@ import pymongo
 from pymongo.dbref import DBRef
 from pymongo.son_manipulator import AutoReference
 from collections import namedtuple
-from minimongo import config
+from minimongo.config import MONGODB_HOST, MONGODB_PORT
 
 
 class MongoCollection(object):
@@ -10,9 +10,9 @@ class MongoCollection(object):
     def __init__(self,
                  host=None, port=None, database=None, collection=None):
         if not host:
-            host = config.host
+            host = MONGODB_HOST
         if not port:
-            port = config.port
+            port = MONGODB_PORT
         self.host = host
         self.port = port
         self.database = database
