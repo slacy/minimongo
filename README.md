@@ -73,8 +73,8 @@ A simple example:
 
 * More template-friendly member accessing.  Return None for missing fields?
 
-* Per-object configuration directives.  Read-only, "Rigid" (no schema change
-  allowed), etc.
+* Per-object configuration directives.  Read-only, Rigid (no schema change
+  allowed after read), etc.
 
 * Support for automatic DBRef field dereferencing.
 
