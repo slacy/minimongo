@@ -78,6 +78,9 @@ A simple example:
 
 * Support for automatic DBRef field dereferencing.
 
+* Better support for SON and field ordering.  Right now, most things are
+  Python dict, which means that ordering is not defined.
+
 # Feedback welcome!
 
 Please email github@slacy.com with comments, suggestions, or comment via
