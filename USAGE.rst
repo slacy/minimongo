@@ -27,8 +27,8 @@ minimongo_config' or you want a slightly cleaner setup, then you can set
 MINIMONGO_SETTINGS_MODULE and then set that to the name of a module that
 provides MONGODB_HOSTNAME and MONGODB_PORT.
 
-Declaring MongoDB object collections:
--------------------------------------
+Declaring MongoDB object collections
+------------------------------------
 
 The next step is to write some code that imports and uses minimongo.  Here's
 a quick example:
@@ -64,3 +64,15 @@ a quick example:
           obj.save()
         print obj
 ::
+
+In short, all you need to do is:
+
+* Derive from minimongo's Model class
+* Assign a class variable named "mongo" to an instance of a MongoCollection.
+
+That's it!  Database connection management is done for you automatically,
+and you can assign fields right into the derived object, then call save().
+It can't get easier than that.
+
+Advanced Usage
+--------------
