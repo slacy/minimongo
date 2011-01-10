@@ -1,5 +1,22 @@
+#!/bin/python
+"""
+Provides the 2 symbols MONGODB_HOST and MONGODB_PORT that are used my
+minimingo to connect to the proper database.
+
+Uses the following 3 strategies:
+1. import os.environ['MINIMONGO_SETTINGS_MODULE']
+2. import 'minimongo_config'
+3. default values (localhost, 27017)
+"""
 import sys
 import os
+
+# Default values for MONGODB_HOST and MONGODB_PORT if no custom config
+# module is specified, or if we're unable to 'from minimongo_config import
+# MONGODB_HOST, MONGODB_PORT'
+MONGODB_HOST = 'localhost'
+MONGODB_PORT = 27017
+
 
 # Taken from Django, which says "Taken from Python 2.7..."
 def _resolve_name(name, package, level):
@@ -36,16 +53,14 @@ def import_module(name, package=None):
     __import__(name)
     return sys.modules[name]
 
-
 if __name__ != '__main__':
-    settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
-    if not settings_module_name:
-        settings_module_name = 'minimongo_config'
-    else:
-        try:
-            module = import_module(settings_module_name)
-        except Exception, e:
-            MONGODB_HOSTNAME = module.MONGODB_HOSTNAME
-            MONGODB_PORT = module.MONGODB_PORT
 
-print "Minimongo using %s:%d", (MONGODB_HOSTNAME, MONGODB_PORT)
+    try:
+        settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
+    except KeyError, e:
+        settings_module_name = 'minimongo_config'
+
+    module = import_module(settings_module_name)
+    MONGODB_HOST = module.MONGODB_HOST
+    MONGODB_PORT = module.MONGODB_PORT
+
