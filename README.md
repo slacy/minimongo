@@ -13,15 +13,15 @@ applications.
     Twitter: @sklacy
     http://slacy.com/blog
 
-# Major features
+## Major features
 
-## No schema declaration
+### No schema declaration
 
 Minimongo has *no* schema declaration.  You do not pre-declare the names and
 types of your fields.  Minimongo takes a minimalist and flexible approach to
 schemas.  You can set any value on any Minimongo-derived object.
 
-## Declared database & collection names.
+### Declared database & collection names.
 
 Miminogo allows you to progromaticaly declare your database and collection
 names.
@@ -31,20 +31,24 @@ provides classmethods for accessing the DB and Collection names
 programatically.  This means you can easily switch DB or Collection names
 without having to change all your code.
 
-## Friendly support for DBRef types.
+### Friendly support for DBRef types.
 
 Minimongo can easily generate fully-specified (DB name included) DBRef
 objects, and store these into fields.  Fetching via DBRef is simplified as
 well.
 
-## Uses Pymongo's query syntax.
+### Uses Pymongo's query syntax.
 
 Query methods are passed directly to Pymongo's API.  Minimongo provides very
 few custom methods, and delegates nearly all operations directly to Pymongo.
 This means as features are added to Pymongo, they will be automatically
 accessible via Minimongo.
 
-## Easy object creation via initalization from Dicts.
+### Easily extensible.
+
+Minimongo-derived objects can be easily extended to add new functionality.
+
+### Easy object creation via initalization from Dicts.
 
 A simple example:
 
@@ -60,7 +64,7 @@ A simple example:
         res.other = 'some data'
         res.save()
 
-# TODOs & Upcoming features:
+## TODOs & Upcoming features:
 
 * DB Connection management and pooling.  Existing code is very crude when it
   comes to DB Connection management.  Implement DB connection pools, etc.
