@@ -76,3 +76,9 @@ It can't get easier than that.
 
 Advanced Usage
 --------------
+
+If you need raw access to the internal fields, then each derived Model
+provides a rawdata() method call.  You can use this to return the internal
+dict of values that are going to be stored.
+
+
