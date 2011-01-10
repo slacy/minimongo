@@ -12,7 +12,8 @@ Otherwise, you'll need to provide minimongo with some configuration.
 
 The easiest way to configure minimongo is to include a module named
 'minimongo_config' on your import path.  It's contents should look like
-this::
+this
+::
 
     MONGODB_HOSTNAME = 'your_mongodb_hostname or ip_addr'
     MONGODB_PORT = 27017
@@ -30,8 +31,9 @@ Declaring MongoDB object collections:
 -------------------------------------
 
 The next step is to write some code that imports and uses minimongo.  Here's
-a quick example::
+a quick example
 
+::
 from minimongo.model import Model, MongoCollection
 
 class MyCollection(Model):
