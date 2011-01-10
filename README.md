@@ -2,15 +2,16 @@
 
 Minimongo is a micro-ORM written in Python for MongoDB.
 
-It provides very lightweight and dynamicly typed object management for any
-data stored in any MongoDB collection.
+It provides very thin, lightweight and dynamicly typed object management
+layer for any data stored in any MongoDB collection.
 
-Minimongo can easily layer on top of existing MongoDB data, and will work
-properly with any existing schema, even from 3rd party applications.
+Minimongo can easily layer on top of existing MongoDB collections, and will
+work properly with almost any existing schema, even from 3rd party
+applications.
 
-Steve Lacy <github@slacy.com>
-Twitter: @sklacy
-http://slacy.com/blog
+    Steve Lacy <github@slacy.com>
+    Twitter: @sklacy
+    http://slacy.com/blog
 
 # Major features
 
@@ -56,6 +57,8 @@ A simple example:
         obj = MyCollection({'x': 1, 'y': 2}).save()
 
         res = MyCollection.find({'x': 1})
+        res.other = 'some data'
+        res.save()
 
 # TODOs & Upcoming features:
 
@@ -71,4 +74,6 @@ A simple example:
 
 # Feedback welcome!
 
-Please email github@slacy.com with comments, suggestions, or find
+Please email github@slacy.com with comments, suggestions, or comment via
+http://github.com/slacy/minimongo
+
