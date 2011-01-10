@@ -1,4 +1,23 @@
 import pymongo
+from pymongo.dbref import DBRef
+from pymongo.son_manipulator import AutoReference
+from collections import namedtuple
+from minimongo import config
+
+
+class MongoCollection(object):
+    """Container class for connection to db & collection settings."""
+    def __init__(self,
+                 host=None, port=None, database=None, collection=None):
+        if not host:
+            host = config.host
+        if not port:
+            port = config.port
+        self.host = host
+        self.port = port
+        self.database = database
+        self.collection = collection
+
 
 class Cursor(object):
     def __init__(self, results, obj_type):
@@ -16,6 +35,10 @@ class Cursor(object):
         return Cursor(results=self._results.limit(*args, **kwargs),
                       obj_type=self._obj_type)
 
+    def skip(self, *args, **kwargs):
+        return Cursor(results=self._results.skip(*args, **kwargs),
+                      obj_type=self._obj_type)
+
     def __iter__(self):
         for i in self._results:
             yield(self._obj_type(i))
@@ -23,20 +46,24 @@ class Cursor(object):
 
 class Meta(type):
     def __new__(mcs, name, bases, data):
-        dbname = data['mongo_database']
-        collname = data['mongo_collection']
-        print "dbname is %s" % dbname
-        print "collname is %s" % collname
+        host = data['mongo'].host
+        port = data['mongo'].port
+        dbname = data['mongo'].database
+        collname = data['mongo'].collection
         new_cls = super(Meta, mcs).__new__(mcs, name, bases, data)
-        if dbname and collname:
-            new_cls.collection = pymongo.Connection()[dbname][collname]
+        if host and port and dbname and collname:
+            new_cls.db = pymongo.Connection(host, port)[dbname]
+            new_cls.collection = new_cls.db[collname]
+            new_cls._collection_name = collname
+            new_cls._database_name = dbname
+            # new_cls.db.add_son_manipulator(AutoReference(new_cls.db))
         return new_cls
 
 
 class Model(object):
     __metaclass__ = Meta
-    mongo_database = None
-    mongo_collection = None
+    mongo = MongoCollection(host=None, port=None,
+                            database=None, collection=None)
 
     def __init__(self, data=None):
         if data:
@@ -44,9 +71,30 @@ class Model(object):
         else:
             self.__dict__['_data'] = {}
 
+    def dbref(self):
+        return DBRef(collection=self.collection_name(),
+                     id=self._data['_id'],
+                     database=self.database_name())
+
+    @classmethod
+    def from_dbref(cls, dbref):
+        return cls.find_one({'_id': dbref.id})
+
+    @property
+    def id(self):
+        return self._id
+
     @property
     def rawdata(self):
         return self._data
+
+    @classmethod
+    def collection_name(cls):
+        return cls._collection_name
+
+    @classmethod
+    def database_name(cls):
+        return cls._database_name
 
     @classmethod
     def find(cls, *args, **kwargs):
@@ -56,7 +104,9 @@ class Model(object):
     @classmethod
     def find_one(cls, *args, **kwargs):
         data = cls.collection.find_one(*args, **kwargs)
-        return cls(data)
+        if data:
+            return cls(data)
+        return None
 
     @classmethod
     def insert(cls, *args, **kwargs):
@@ -65,6 +115,14 @@ class Model(object):
     @classmethod
     def remove(cls, spec):
         return cls.collection.remove(spec)
+
+    @classmethod
+    def ensure_index(cls, *args, **kwargs):
+        return cls.collection.ensure_index(*args, **kwargs)
+
+    @classmethod
+    def drop_collection(cls):
+        return cls.collection.drop()
 
     def delete(self):
         return self.collection.remove(self._data['_id'])
@@ -78,10 +136,6 @@ class Model(object):
     def save(self):
         self.collection.save(self._data)
         return self
-
-    @classmethod
-    def drop_collection(cls):
-        return cls.collection.drop()
 
     def __setitem__(self, key, value):
         self._data[key] = value
@@ -104,3 +158,6 @@ class Model(object):
     def __str__(self):
         ret = str(self._data)
         return ret
+
+    def __contains__(self, item):
+        return item in self._data

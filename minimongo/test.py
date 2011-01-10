@@ -1,11 +1,9 @@
 import unittest
 
-from minimongo.model import Model
+from minimongo.model import Model, MongoCollection
 
 class TestModel(Model):
-    mongo_collection = 'minimongo_test'
-    mongo_database = 'test'
-    pass
+    mongo = MongoCollection(database='test', collection='minimongo_test')
 
 
 def assertContains(iterator, instance):
