@@ -69,6 +69,8 @@ A simple example:
 * DB Connection management and pooling.  Existing code is very crude when it
   comes to DB Connection management.  Implement DB connection pools, etc.
 
+* Easier configuration management.
+
 * More template-friendly member accessing.  Return None for missing fields?
 
 * Per-object configuration directives.  Read-only, "Rigid" (no schema change
