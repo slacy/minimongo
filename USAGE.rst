@@ -12,7 +12,7 @@ Otherwise, you'll need to provide minimongo with some configuration.
 
 The easiest way to configure minimongo is to include a module named
 'minimongo_config' on your import path.  It's contents should look like
-this
+this:
 ::
 
     MONGODB_HOSTNAME = 'your_mongodb_hostname or ip_addr'
@@ -31,23 +31,36 @@ Declaring MongoDB object collections:
 -------------------------------------
 
 The next step is to write some code that imports and uses minimongo.  Here's
-a quick example
+a quick example:
 
 ::
-from minimongo.model import Model, MongoCollection
 
-class MyCollection(Model):
-    mongo = MongoCollection(database='test', collection='minimongo.test')
+    from minimongo.model import Model, MongoCollection
 
-new_obj = MyCollection()
-new_obj.x = 1
-new_obj.y = 2
-new_obj.save()
+    # Declare our collection
+    class MyCollection(Model):
+        mongo = MongoCollection(database='test', collection='minimongo.test')
 
-another_obj = MyCollection({'x':1, 'y':3}).save()
+    # Construct an instance.  Not saved until you call save()
+    new_obj = MyCollection()
 
-found_objects = MyCollection.find({'x':1})
+    # Assign some arbitry members
+    new_obj.x = 1
+    new_obj.y = 2
 
-for obj in found_objects:
-    print obj
+    # Save it to mongodb
+    new_obj.save()
+
+    # You can also do dict-base initialization.
+    another_obj = MyCollection({'x':1, 'y':3}).save()
+
+    # And the query syntax is exactly the same as pymongo.
+    found_objects = MyCollection.find({'x':1})
+
+    # found_objects is an iterable, just like in pymongo.
+    for obj in found_objects:
+        if 'x' in obj:
+          obj.x += 1
+          obj.save()
+        print obj
 ::
