@@ -6,7 +6,7 @@ from minimongo.config import MONGODB_HOST, MONGODB_PORT
 
 
 class MongoCollection(object):
-    """Container class for connection to db & collection settings."""
+    """Container class for connection to db & mongo collection settings."""
     def __init__(self,
                  host=None, port=None, database=None, collection=None):
         if not host:
@@ -20,6 +20,9 @@ class MongoCollection(object):
 
 
 class Cursor(object):
+    """Simple wrapper around the cursor (iterator) that comes back from
+    pymongo.  We do this so that when you iterate through results from a
+    find, you get a generator of Model objects, not a bunch of dicts. """
     def __init__(self, results, obj_type):
         self._obj_type = obj_type
         self._results = results
@@ -45,6 +48,12 @@ class Cursor(object):
 
 
 class Meta(type):
+    """Metaclass for our model class.  Inspects the class variables, looks
+    for 'mongo' and uses that to connect to the database. """
+
+    # A very rudimentary connection pool:
+    _connections = {}
+
     def __new__(mcs, name, bases, data):
         host = data['mongo'].host
         port = data['mongo'].port
@@ -52,7 +61,13 @@ class Meta(type):
         collname = data['mongo'].collection
         new_cls = super(Meta, mcs).__new__(mcs, name, bases, data)
         if host and port and dbname and collname:
-            new_cls.db = pymongo.Connection(host, port)[dbname]
+            # Check the connection pool for an existing connection.
+            if (host, port) in mcs._connections:
+                connection = mcs._connections[(host, port)]
+            else:
+                connection = pymongo.Connection(host, port)
+                mcs._connections[(host, port)] = connection
+            new_cls.db = connection[dbname]
             new_cls.collection = new_cls.db[collname]
             new_cls._collection_name = collname
             new_cls._database_name = dbname
