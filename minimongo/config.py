@@ -37,15 +37,19 @@ def import_module(name, package=None):
     return sys.modules[name]
 
 
+MONGODB_HOST = 'localhost'
+MONGODB_PORT = 27017
+
 if __name__ != '__main__':
-    settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
+    try:
+        settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
+    except KeyError, e:
+        settings_module_name = None
+
     if not settings_module_name:
         settings_module_name = 'minimongo_config'
-    else:
-        try:
-            module = import_module(settings_module_name)
-        except Exception, e:
-            MONGODB_HOSTNAME = module.MONGODB_HOSTNAME
-            MONGODB_PORT = module.MONGODB_PORT
 
-print "Minimongo using %s:%d", (MONGODB_HOSTNAME, MONGODB_PORT)
+    module = import_module(settings_module_name)
+    MONGODB_HOST = module.MONGODB_HOST
+    MONGODB_PORT = module.MONGODB_PORT
+
