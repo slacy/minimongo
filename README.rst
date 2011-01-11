@@ -1,4 +1,5 @@
-# Minimongo
+Minimongo
+===========
 
 Minimongo is a lightweight, Pythonic Object-Oriented interface to MongoDB.
 
@@ -10,15 +11,17 @@ work properly with almost any existing schema, even from 3rd party
 applications.
 
 Contact:
-
+::
     Steve Lacy <github@slacy.com>
     Twitter: @sklacy
     http://slacy.com/blog
+::
 
 For an introduction to all it's features, please see [the USAGE
 file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 
-## Major features
+Major features
+--------------
 
 * **No schema declaration**
 
@@ -63,8 +66,9 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 * **Easy object creation via initalization from Dicts.**
 
 
-## Example
-
+Example
+-------
+::
     from minimongo import Model, MongoCollection
 
     class MyCollection(Model):
@@ -76,8 +80,10 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
         res = MyCollection.find({'x': 1})
         res.other = 'some data'
         res.save()
+::
 
-## TODOs & Upcoming features:
+TODOs & Upcoming features:
+--------------------------
 
 * More template-friendly member accessing.  Return None for missing fields?
 
@@ -97,7 +103,8 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 * Better support for nested Model objects. (Right now, nested data must be
   of a native Python type, not of another Model).
 
-## Feedback welcome!
+Feedback welcome!
+-----------------
 
 Please email github@slacy.com with comments, suggestions, or comment via
 http://github.com/slacy/minimongo
