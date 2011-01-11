@@ -67,7 +67,7 @@ class Meta(type):
             if hostport in mcs._connections:
                 connection = mcs._connections[hostport]
             else:
-                connection = pymongo.Connection(host, port)
+                connection = pymongo.Connection(host, port, pool_size=16)
                 mcs._connections[hostport] = connection
             new_cls.db = connection[dbname]
             new_cls.collection = new_cls.db[collname]

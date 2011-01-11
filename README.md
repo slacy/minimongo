@@ -39,6 +39,10 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 
 * Automatic MongoDB Connection mangagement and connection pooling.
 
+    Minimongo automatically connects to your database for you, and has its
+    own simple Connection pool.  Connections are persistent and last the
+    lifetime of your application.
+
 * Friendly support for DBRef types.
 
     Minimongo can easily generate fully-specified (DB name included) DBRef
