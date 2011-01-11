@@ -54,13 +54,16 @@ def import_module(name, package=None):
     return sys.modules[name]
 
 if __name__ != '__main__':
-
     try:
         settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
     except KeyError, e:
-        settings_module_name = 'minimongo_config'
-
-    module = import_module(settings_module_name)
-    MONGODB_HOST = module.MONGODB_HOST
-    MONGODB_PORT = module.MONGODB_PORT
-
+        try:
+            settings_module_name = 'minimongo_config'
+            module = import_module(settings_module_name)
+            MONGODB_HOST = module.MONGODB_HOST
+            MONGODB_PORT = module.MONGODB_PORT
+        except ImportError, e:
+            # Can't import either MINIMONGO_SETTINGS_MODULE, or
+            # minimongo_config, so we just return, knowing that the default
+            # values will be used.
+            pass

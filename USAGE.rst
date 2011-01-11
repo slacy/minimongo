@@ -18,8 +18,9 @@ this:
     MONGODB_PORT = 27017
 ::
 
-For example, copy minimongo_config.example to minimongo_config.py and edit
-the required values, and you should be good to go.
+For example, copy minimongo/minimongo/minimongo_config.example to
+minimongo_config.py and edit the required values, and you should be good to
+go.
 
 If you're unable to create something that satisfies 'import
 minimongo_config' or you want a slightly cleaner setup, then you can set

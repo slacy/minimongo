@@ -27,7 +27,7 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
     approach to schemas.  You can set any value on any Minimongo-derived
     object.
 
-* Declared database & collection names.
+* **Declared database & collection names.**
 
     Miminogo allows you to progromaticaly declare your database and
     collection names.
@@ -37,30 +37,30 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
     programatically.  This means you can easily switch DB or Collection
     names without having to change all your code.
 
-* Automatic MongoDB Connection mangagement and connection pooling.
+* **Automatic MongoDB Connection mangagement and connection pooling.**
 
     Minimongo automatically connects to your database for you, and has its
     own simple Connection pool.  Connections are persistent and last the
     lifetime of your application.
 
-* Friendly support for DBRef types.
+* **Friendly support for DBRef types.**
 
     Minimongo can easily generate fully-specified (DB name included) DBRef
     objects, and store these into fields.  Fetching via DBRef is simplified
     as well.
 
-* Uses Pymongo's query syntax.
+* **Uses Pymongo's native query syntax.**
 
     Query methods are passed directly to Pymongo's API.  Minimongo provides
     very few custom methods, and delegates nearly all operations directly to
     Pymongo.  This means as features are added to Pymongo, they will be
     automatically accessible via Minimongo.
 
-* Easily extensible.
+* **Easily extensible.**
 
     Minimongo-derived objects can be easily extended to add new functionality.
 
-* Easy object creation via initalization from Dicts.
+* **Easy object creation via initalization from Dicts.**
 
 
 ## Example
@@ -78,11 +78,6 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
         res.save()
 
 ## TODOs & Upcoming features:
-
-* DB Connection management and pooling.  Existing code is very crude when it
-  comes to DB Connection management.  Implement DB connection pools, etc.
-
-* Easier configuration management.
 
 * More template-friendly member accessing.  Return None for missing fields?
 
@@ -102,7 +97,7 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 * Better support for nested Model objects. (Right now, nested data must be
   of a native Python type, not of another Model).
 
-# Feedback welcome!
+## Feedback welcome!
 
 Please email github@slacy.com with comments, suggestions, or comment via
 http://github.com/slacy/minimongo

@@ -1,9 +1,7 @@
 #!/bin/python
 import pymongo
 from pymongo.dbref import DBRef
-from pymongo.son_manipulator import AutoReference
-from collections import namedtuple
-from minimongo.config import MONGODB_HOST, MONGODB_PORT
+from minimongo import config
 
 
 class MongoCollection(object):
@@ -11,9 +9,9 @@ class MongoCollection(object):
     def __init__(self,
                  host=None, port=None, database=None, collection=None):
         if not host:
-            host = MONGODB_HOST
+            host = config.MONGODB_HOST
         if not port:
-            port = MONGODB_PORT
+            port = config.MONGODB_PORT
         self.host = host
         self.port = port
         self.database = database
@@ -67,13 +65,12 @@ class Meta(type):
             if hostport in mcs._connections:
                 connection = mcs._connections[hostport]
             else:
-                connection = pymongo.Connection(host, port, pool_size=16)
+                connection = pymongo.Connection(host, port)
                 mcs._connections[hostport] = connection
             new_cls.db = connection[dbname]
             new_cls.collection = new_cls.db[collname]
             new_cls._collection_name = collname
             new_cls._database_name = dbname
-            # new_cls.db.add_son_manipulator(AutoReference(new_cls.db))
         return new_cls
 
     def collection_name(mcs):
