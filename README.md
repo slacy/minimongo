@@ -13,6 +13,8 @@ applications.
     Twitter: @sklacy
     http://slacy.com/blog
 
+For an introduction to all it's features, please see [[http://github.com/sklacy/minimongo/blob/master/USAGE.rst]].
+
 ## Major features
 
 ### No schema declaration
