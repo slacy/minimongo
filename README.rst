@@ -69,6 +69,9 @@ Major features
 Example
 -------
 
+Here's a very brief example of creating an object, querying for it,
+modifying a field, and then saving it back again.
+
 ::
     from minimongo import Model, MongoCollection
 
@@ -103,6 +106,8 @@ TODOs & Upcoming features:
 
 * Better support for nested Model objects. (Right now, nested data must be
   of a native Python type, not of another Model).
+
+* Automatic Index creation at database connection time.
 
 Feedback welcome!
 -----------------
