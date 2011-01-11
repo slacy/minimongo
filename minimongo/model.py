@@ -1,3 +1,4 @@
+#!/bin/python
 import pymongo
 from pymongo.dbref import DBRef
 from pymongo.son_manipulator import AutoReference
@@ -61,18 +62,40 @@ class Meta(type):
         collname = data['mongo'].collection
         new_cls = super(Meta, mcs).__new__(mcs, name, bases, data)
         if host and port and dbname and collname:
+            hostport = (host, port)
             # Check the connection pool for an existing connection.
-            if (host, port) in mcs._connections:
-                connection = mcs._connections[(host, port)]
+            if hostport in mcs._connections:
+                connection = mcs._connections[hostport]
             else:
                 connection = pymongo.Connection(host, port)
-                mcs._connections[(host, port)] = connection
+                mcs._connections[hostport] = connection
             new_cls.db = connection[dbname]
             new_cls.collection = new_cls.db[collname]
             new_cls._collection_name = collname
             new_cls._database_name = dbname
             # new_cls.db.add_son_manipulator(AutoReference(new_cls.db))
         return new_cls
+
+    def find(mcs, *args, **kwargs):
+        results = mcs.collection.find(*args, **kwargs)
+        return Cursor(results, mcs)
+
+    def find_one(mcs, *args, **kwargs):
+        data = mcs.collection.find_one(*args, **kwargs)
+        if data:
+            return mcs(data)
+        return None
+
+    def __getattribute__(mcs, *args):
+        try:
+            ret = object.__getattribute__(mcs, *args)
+        except AttributeError, e:
+            try:
+                ret = object.__getattribute__(mcs.collection, *args)
+            except AttributeError, e:
+                ret = object.__getattribute__(mcs.db, *args)
+        return ret
+
 
 
 class Model(object):
@@ -111,34 +134,6 @@ class Model(object):
     def database_name(cls):
         return cls._database_name
 
-    @classmethod
-    def find(cls, *args, **kwargs):
-        results = cls.collection.find(*args, **kwargs)
-        return Cursor(results, cls)
-
-    @classmethod
-    def find_one(cls, *args, **kwargs):
-        data = cls.collection.find_one(*args, **kwargs)
-        if data:
-            return cls(data)
-        return None
-
-    @classmethod
-    def insert(cls, *args, **kwargs):
-        return cls.collection.insert(*args, **kwargs)
-
-    @classmethod
-    def remove(cls, spec):
-        return cls.collection.remove(spec)
-
-    @classmethod
-    def ensure_index(cls, *args, **kwargs):
-        return cls.collection.ensure_index(*args, **kwargs)
-
-    @classmethod
-    def drop_collection(cls):
-        return cls.collection.drop()
-
     def delete(self):
         return self.collection.remove(self._data['_id'])
 
@@ -152,17 +147,18 @@ class Model(object):
         self.collection.save(self._data)
         return self
 
+    def __getattribute__(self, *args):
+        try:
+            ret = object.__getattribute__(self, *args)
+        except AttributeError, e:
+            try:
+                ret = self._data[args[0]]
+            except AttributeError, e:
+                ret = object.__getattribute__(type(self).collection, *args)
+        return ret
+
     def __setitem__(self, key, value):
         self._data[key] = value
-
-    def __getitem__(self, key):
-        return self._data[key]
-
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            return self._data[attr]
 
     def __setattr__(self, attr, value):
         self._data[attr] = value
@@ -171,7 +167,7 @@ class Model(object):
         del self._data[attr]
 
     def __str__(self):
-        ret = str(self._data)
+        ret = 'Model(' + str(self._data) + ')'
         return ret
 
     def __contains__(self, item):

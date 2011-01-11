@@ -15,7 +15,7 @@ def assertContains(iterator, instance):
 
 class TestSimpleModel(unittest.TestCase):
     def setUp(self):
-        TestModel.drop_collection()
+        TestModel.drop()
 
     def test_creation(self):
         m = TestModel({'x':1, 'y':1})
@@ -63,7 +63,10 @@ class TestSimpleModel(unittest.TestCase):
         m.save()
 
         n = TestModel.find_one({'x': 1})
-        self.assertEqual(m.l, n.l)
+
+        ml = m.l
+        nl = n.l
+        self.assertEqual(ml, nl)
 
     def test_delete_field(self):
         m = TestModel({'x': 1, 'y': 2})

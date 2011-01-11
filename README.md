@@ -81,6 +81,11 @@ A simple example:
 * Better support for SON and field ordering.  Right now, most things are
   Python dict, which means that ordering is not defined.
 
+* Delta modification tracking so that when you call save(), it doesn't send
+  the whole document back to the server to modify one field.
+
+* Support for the mongodb atomic operations like $inc, $push, $pull, etc.
+
 # Feedback welcome!
 
 Please email github@slacy.com with comments, suggestions, or comment via
