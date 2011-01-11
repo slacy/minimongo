@@ -101,3 +101,9 @@ Additional Features
 each derived Model provides a rawdata() method call.  You can use this to
 return the internal dict of values that are going to be stored.
 
+Additional Info
+---------------
+
+Please see the unit tests for additional usage scenarios, and feel free to
+contact me at github@slacy.com with any feature requests or additions you'd
+like to see.
