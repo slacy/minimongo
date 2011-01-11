@@ -115,7 +115,9 @@ class TestSimpleModel(unittest.TestCase):
         Collection names."""
         a = TestModel({'x': 1})
         self.assertEqual(a.database_name, 'test')
+        self.assertEqual(TestModel.database_name(), 'test')
         self.assertEqual(a.collection_name, 'minimongo_test')
+        self.assertEqual(TestModel.collection_name(), 'minimongo_test')
 
 if __name__ == '__main__':
     unittest.main()
