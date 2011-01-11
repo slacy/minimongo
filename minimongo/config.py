@@ -5,14 +5,14 @@ minimingo to connect to the proper database.
 
 Uses the following 3 strategies:
 1. import os.environ['MINIMONGO_SETTINGS_MODULE']
-2. import 'minimongo_config'
+2. import 'minimongo.app_config'
 3. default values (localhost, 27017)
 """
 import sys
 import os
 
 # Default values for MONGODB_HOST and MONGODB_PORT if no custom config
-# module is specified, or if we're unable to 'from minimongo_config import
+# module is specified, or if we're unable to 'from minimongo.app_config import
 # MONGODB_HOST, MONGODB_PORT'
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
@@ -58,7 +58,7 @@ if __name__ != '__main__':
         settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
     except KeyError, e:
         try:
-            settings_module_name = 'minimongo_config'
+            settings_module_name = 'minimongo.app_config'
             module = import_module(settings_module_name)
             MONGODB_HOST = module.MONGODB_HOST
             MONGODB_PORT = module.MONGODB_PORT

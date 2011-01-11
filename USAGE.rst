@@ -11,15 +11,15 @@ the next step.
 Otherwise, you'll need to provide minimongo with some configuration.
 
 The easiest way to configure minimongo is to include a module named
-'minimongo_config' on your import path.  It's contents should look like
+'minimongo.app_config' on your import path.  It's contents should look like
 this:
 ::
     MONGODB_HOSTNAME = 'your_mongodb_hostname or ip_addr'
     MONGODB_PORT = 27017
 ::
 
-For example, copy minimongo/minimongo/minimongo_config.example to
-minimongo_config.py and edit the required values, and you should be good to
+For example, copy minimongo/minimongo/app.config.py.example to
+app_config.py and edit the required values, and you should be good to
 go.
 
 If you're unable to create something that satisfies 'import

@@ -1,5 +1,0 @@
-# Copy this file to minimongo_config.py, and put it anywhere on your import
-# path.
-
-MONGODB_HOST = 'yourhost'
-MONGODB_PORT = 27017
