@@ -9,7 +9,7 @@ Minimongo can easily layer on top of existing MongoDB collections, and will
 work properly with almost any existing schema, even from 3rd party
 applications.
 
-Author:
+Contact:
 
     Steve Lacy <github@slacy.com>
     Twitter: @sklacy
@@ -20,7 +20,7 @@ file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 
 ## Major features
 
-* No schema declaration
+* **No schema declaration**
 
     Minimongo has *no* schema declaration.  You do not pre-declare the names
     and types of your fields.  Minimongo takes a minimalist and flexible
