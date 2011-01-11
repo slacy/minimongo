@@ -12,9 +12,9 @@ applications.
 
 Contact:
 ::
-    Steve Lacy <github@slacy.com>
-    Twitter: @sklacy
-    http://slacy.com/blog
+  Steve Lacy <github@slacy.com>
+  Twitter: @sklacy
+  http://slacy.com/blog
 ::
 
 For an introduction to all it's features, please see [the USAGE
@@ -73,17 +73,17 @@ Here's a very brief example of creating an object, querying for it,
 modifying a field, and then saving it back again.
 
 ::
-    from minimongo import Model, MongoCollection
+  from minimongo import Model, MongoCollection
 
-    class MyCollection(Model):
-        mongo = MongoCollection(database='test', collection='minimongo.example')
+  class MyCollection(Model):
+      mongo = MongoCollection(database='test', collection='minimongo.example')
 
-    if __name__ == '__main__':
-        obj = MyCollection({'x': 1, 'y': 2}).save()
+  if __name__ == '__main__':
+      obj = MyCollection({'x': 1, 'y': 2}).save()
 
-        res = MyCollection.find({'x': 1})
-        res.other = 'some data'
-        res.save()
+      res = MyCollection.find({'x': 1})
+      res.other = 'some data'
+      res.save()
 ::
 
 TODOs & Upcoming features:
