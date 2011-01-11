@@ -21,6 +21,9 @@ class TestSimpleModel(unittest.TestCase):
         m = TestModel({'x':1, 'y':1})
         m.save()
         n = TestModel.find_one({'x': 1})
+        # Make sure that the find_one method returns the right type.
+        self.assertEqual(type(n), TestModel)
+        # Make sure that the contents are the same.
         self.assertEqual(n.rawdata, m.rawdata)
 
     def test_queries(self):
@@ -36,6 +39,9 @@ class TestSimpleModel(unittest.TestCase):
         lx1 = list(x1)
         ly1 = list(y1)
         lx2y2 = list(x2y2)
+
+        self.assertEqual(type(lx1[0]), TestModel)
+
         self.assertTrue(assertContains(lx1, a))
         self.assertTrue(assertContains(lx1, b))
         self.assertTrue(assertContains(ly1, a))
@@ -57,6 +63,7 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(m.count(), 0)
 
     def test_complex_types(self):
+        """Test lists as types."""
         m = TestModel()
         m.l = ['a', 'b', 'c']
         m.x = 1
@@ -69,6 +76,7 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(ml, nl)
 
     def test_delete_field(self):
+        """Test deleting a single field from an object."""
         m = TestModel({'x': 1, 'y': 2})
         m.save()
         del(m.x)
@@ -78,6 +86,7 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(n.rawdata, {'y': 2, '_id': m._id})
 
     def test_count_and_fetch(self):
+        """Test counting methods on Cursors. """
         a = TestModel({'x': 1, 'y': 1}).save()
         b = TestModel({'x': 1, 'y': 2}).save()
         c = TestModel({'x': 1, 'y': 3}).save()
@@ -91,6 +100,22 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(l[2].rawdata, c.rawdata)
         self.assertEqual(l[3].rawdata, d.rawdata)
 
+
+    def test_dbref(self):
+        """Test generation of DBRef objects, and querying via DBRef
+        objects."""
+        a = TestModel({'x': 1, 'y': 999}).save()
+        a1 = a.dbref()
+
+        b = TestModel.from_dbref(a1)
+        self.assertEqual(a.rawdata, b.rawdata)
+
+    def test_db_and_collection_names(self):
+        """Test the methods that return the current class's DB and
+        Collection names."""
+        a = TestModel({'x': 1})
+        self.assertEqual(a.database_name, 'test')
+        self.assertEqual(a.collection_name, 'minimongo_test')
 
 if __name__ == '__main__':
     unittest.main()

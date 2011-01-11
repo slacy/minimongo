@@ -76,17 +76,34 @@ class Meta(type):
             # new_cls.db.add_son_manipulator(AutoReference(new_cls.db))
         return new_cls
 
+    def collection_name(mcs):
+        return mcs._collection_name
+
+    def database_name(mcs):
+        return mcs._database_name
+
+    def from_dbref(mcs, dbref):
+        """Given a DBRef, return an instance."""
+        return mcs.find_one({'_id': dbref.id})
+
     def find(mcs, *args, **kwargs):
+        """Passthrough to pymongo's find() method, and wrap the results in a
+        Cursor object so that we get Model objects while iterating."""
         results = mcs.collection.find(*args, **kwargs)
         return Cursor(results, mcs)
 
     def find_one(mcs, *args, **kwargs):
+        """Passthrough to pymongo's find_one() method, and wrap the results
+        in a Model object of the correct type."""
         data = mcs.collection.find_one(*args, **kwargs)
         if data:
             return mcs(data)
         return None
 
     def __getattribute__(mcs, *args):
+        """This gets invoked for things that look like classmethods.  First
+        we try the attribute from self, then from the collection, then from
+        the db."""
         try:
             ret = object.__getattribute__(mcs, *args)
         except AttributeError, e:
@@ -99,6 +116,7 @@ class Meta(type):
 
 
 class Model(object):
+    """Base class for all Minimongo objects.  Derive from this class."""
     __metaclass__ = Meta
     mongo = MongoCollection(host=None, port=None,
                             database=None, collection=None)
@@ -110,13 +128,11 @@ class Model(object):
             self.__dict__['_data'] = {}
 
     def dbref(self):
-        return DBRef(collection=self.collection_name(),
+        """Return an instance of a DBRef for the current object."""
+        return DBRef(collection=self.collection_name,
                      id=self._data['_id'],
-                     database=self.database_name())
+                     database=self.database_name)
 
-    @classmethod
-    def from_dbref(cls, dbref):
-        return cls.find_one({'_id': dbref.id})
 
     @property
     def id(self):
@@ -126,13 +142,13 @@ class Model(object):
     def rawdata(self):
         return self._data
 
-    @classmethod
-    def collection_name(cls):
-        return cls._collection_name
+    @property
+    def database_name(self):
+        return type(self)._database_name
 
-    @classmethod
-    def database_name(cls):
-        return cls._database_name
+    @property
+    def collection_name(self):
+        return type(self)._collection_name
 
     def delete(self):
         return self.collection.remove(self._data['_id'])

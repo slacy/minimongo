@@ -86,6 +86,9 @@ A simple example:
 
 * Support for the mongodb atomic operations like $inc, $push, $pull, etc.
 
+* Better support for nested Model objects. (Right now, nested data must be
+  of a native Python type, not of another Model).
+
 # Feedback welcome!
 
 Please email github@slacy.com with comments, suggestions, or comment via
