@@ -4,21 +4,20 @@ Minimongo
 Minimongo is a lightweight, Pythonic Object-Oriented interface to MongoDB.
 
 It provides a very thin, and dynamicly typed object management layer for any
-data stored in any MongoDB collection.
+data stored in any MongoDB collection, and usese the native pymongo_ query
+syntax.
 
 Minimongo can easily layer on top of existing MongoDB collections, and will
 work properly with almost any existing schema, even from 3rd party
 applications.
 
-Contact:
-::
-  Steve Lacy <github@slacy.com>
-  Twitter: @sklacy
-  http://slacy.com/blog
-::
+Contact::
 
-For an introduction to all it's features, please see [the USAGE
-file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
+    Steve Lacy <github@slacy.com>
+    Twitter: @sklacy
+    http://slacy.com/blog
+
+For an introduction to all it's features, please see the USAGE_ file.
 
 Major features
 --------------
@@ -52,11 +51,11 @@ Major features
   objects, and store these into fields.  Fetching via DBRef is simplified as
   well.
 
-* **Uses Pymongo's native query syntax.**
+* **Uses Pymongo_'s native query syntax.**
 
-  Query methods are passed directly to Pymongo's API.  Minimongo provides
+  Query methods are passed directly to Pymongo_'s API.  Minimongo provides
   very few custom methods, and delegates nearly all operations directly to
-  Pymongo.  This means as features are added to Pymongo, they will be
+  Pymongo_.  This means as features are added to Pymongo_, they will be
   automatically accessible via Minimongo.
 
 * **Easily extensible.**
@@ -70,9 +69,8 @@ Example
 -------
 
 Here's a very brief example of creating an object, querying for it,
-modifying a field, and then saving it back again.
+modifying a field, and then saving it back again.::
 
-::
   from minimongo import Model, MongoCollection
 
   class MyCollection(Model):
@@ -84,7 +82,7 @@ modifying a field, and then saving it back again.
       res = MyCollection.find({'x': 1})
       res.other = 'some data'
       res.save()
-::
+
 
 TODOs & Upcoming features:
 --------------------------
@@ -115,3 +113,5 @@ Feedback welcome!
 Please email github@slacy.com with comments, suggestions, or comment via
 http://github.com/slacy/minimongo
 
+.. _pymongo: http://api.mongodb.org/python/1.9%2B/index.html
+.. _usage: http://github.com/slacy/minimongo/blob/master/USAGE.rst#readme
