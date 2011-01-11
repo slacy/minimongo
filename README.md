@@ -1,29 +1,32 @@
 # Minimongo
 
-Minimongo is a micro-ORM written in Python for MongoDB.
+Minimongo is a lightweight, Pythonic Object-Oriented interface to MongoDB.
 
-It provides very thin, lightweight and dynamicly typed object management
-layer for any data stored in any MongoDB collection.
+It provides a very thin, and dynamicly typed object management layer for any
+data stored in any MongoDB collection.
 
 Minimongo can easily layer on top of existing MongoDB collections, and will
 work properly with almost any existing schema, even from 3rd party
 applications.
 
+Author:
+
     Steve Lacy <github@slacy.com>
     Twitter: @sklacy
     http://slacy.com/blog
 
-For an introduction to all it's features, please see [the USAGE file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
+For an introduction to all it's features, please see [the USAGE
+file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 
 ## Major features
 
-### No schema declaration
+* No schema declaration
 
 Minimongo has *no* schema declaration.  You do not pre-declare the names and
 types of your fields.  Minimongo takes a minimalist and flexible approach to
 schemas.  You can set any value on any Minimongo-derived object.
 
-### Declared database & collection names.
+* Declared database & collection names.
 
 Miminogo allows you to progromaticaly declare your database and collection
 names.
@@ -33,24 +36,26 @@ provides classmethods for accessing the DB and Collection names
 programatically.  This means you can easily switch DB or Collection names
 without having to change all your code.
 
-### Friendly support for DBRef types.
+* Automatic MongoDB Connection mangagement and connection pooling.
+
+* Friendly support for DBRef types.
 
 Minimongo can easily generate fully-specified (DB name included) DBRef
 objects, and store these into fields.  Fetching via DBRef is simplified as
 well.
 
-### Uses Pymongo's query syntax.
+* Uses Pymongo's query syntax.
 
 Query methods are passed directly to Pymongo's API.  Minimongo provides very
 few custom methods, and delegates nearly all operations directly to Pymongo.
 This means as features are added to Pymongo, they will be automatically
 accessible via Minimongo.
 
-### Easily extensible.
+* Easily extensible.
 
 Minimongo-derived objects can be easily extended to add new functionality.
 
-### Easy object creation via initalization from Dicts.
+* Easy object creation via initalization from Dicts.
 
 A simple example:
 
