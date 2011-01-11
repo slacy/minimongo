@@ -13,7 +13,7 @@ applications.
     Twitter: @sklacy
     http://slacy.com/blog
 
-For an introduction to all it's features, please see [the USAGE file](http://github.com/sklacy/minimongo/blob/master/USAGE.rst).
+For an introduction to all it's features, please see [the USAGE file](http://github.com/slacy/minimongo/blob/master/USAGE.rst).
 
 ## Major features
 
