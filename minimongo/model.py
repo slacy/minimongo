@@ -3,7 +3,6 @@ import pymongo
 from pymongo.dbref import DBRef
 from minimongo import config
 
-
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
     def __init__(self,
@@ -74,9 +73,11 @@ class Meta(type):
         return new_cls
 
     def collection_name(mcs):
+        """Return the name of the MongDB collection for the current Model."""
         return mcs._collection_name
 
     def database_name(mcs):
+        """Return the name of the MongDB database for the current Model."""
         return mcs._database_name
 
     def from_dbref(mcs, dbref):
@@ -103,13 +104,12 @@ class Meta(type):
         the db."""
         try:
             ret = object.__getattribute__(mcs, *args)
-        except AttributeError, e:
+        except AttributeError, _err:
             try:
                 ret = object.__getattribute__(mcs.collection, *args)
-            except AttributeError, e:
+            except AttributeError, _err:
                 ret = object.__getattribute__(mcs.db, *args)
         return ret
-
 
 
 class Model(object):
@@ -130,13 +130,13 @@ class Model(object):
                      id=self._data['_id'],
                      database=self.database_name)
 
-
     @property
     def id(self):
         return self._id
 
     @property
     def rawdata(self):
+        """Return the raw document data as a dict."""
         return self._data
 
     @property
@@ -163,10 +163,10 @@ class Model(object):
     def __getattribute__(self, *args):
         try:
             ret = object.__getattribute__(self, *args)
-        except AttributeError, e:
+        except AttributeError, _err:
             try:
                 ret = self._data[args[0]]
-            except AttributeError, e:
+            except AttributeError, _err:
                 ret = object.__getattribute__(type(self).collection, *args)
         return ret
 
