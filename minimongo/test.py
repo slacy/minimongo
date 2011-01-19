@@ -100,10 +100,10 @@ class TestSimpleModel(unittest.TestCase):
 
     def test_count_and_fetch(self):
         """Test counting methods on Cursors. """
-        dummy_a = TestModel({'x': 1, 'y': 1}).save()
-        dummy_b = TestModel({'x': 1, 'y': 2}).save()
-        dummy_c = TestModel({'x': 1, 'y': 3}).save()
         dummy_d = TestModel({'x': 1, 'y': 4}).save()
+        dummy_b = TestModel({'x': 1, 'y': 2}).save()
+        dummy_a = TestModel({'x': 1, 'y': 1}).save()
+        dummy_c = TestModel({'x': 1, 'y': 3}).save()
 
         find_x1 = TestModel.find({'x': 1}).sort('y')
         self.assertEqual(find_x1.count(), 4)
@@ -112,6 +112,22 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(list_x1[1].rawdata, dummy_b.rawdata)
         self.assertEqual(list_x1[2].rawdata, dummy_c.rawdata)
         self.assertEqual(list_x1[3].rawdata, dummy_d.rawdata)
+
+    def test_fetch_and_limit(self):
+        """Test counting methods on Cursors. """
+        dummy_d = TestModel({'x': 1, 'y': 4}).save()
+        dummy_b = TestModel({'x': 1, 'y': 2}).save()
+        dummy_a = TestModel({'x': 1, 'y': 1}).save()
+        dummy_c = TestModel({'x': 1, 'y': 3}).save()
+
+        find_x1 = TestModel.find({'x': 1}).limit(2).sort('y')
+        # Huh, calling count() on a find() with a limit() returns the total
+        # number of elements matched.  Maybe I'm calling it wrong?
+        # self.assertEqual(find_x1.count(), 2)
+        list_x1 = list(find_x1)
+        self.assertEqual(len(list_x1), 2)
+        self.assertEqual(list_x1[0].rawdata, dummy_a.rawdata)
+        self.assertEqual(list_x1[1].rawdata, dummy_b.rawdata)
 
     def test_dbref(self):
         """Test generation of DBRef objects, and querying via DBRef

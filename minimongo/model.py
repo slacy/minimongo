@@ -2,6 +2,7 @@
 import pymongo
 from pymongo.dbref import DBRef
 from minimongo import config
+from pymongo.cursor import Cursor as PyMongoCursor
 
 
 class MongoCollection(object):
@@ -18,28 +19,29 @@ class MongoCollection(object):
         self.collection = collection
 
 
+def cursor_wrapped(wrapped):
+    def method(cursor, *args, **kwargs):
+        print "cursor_wrapped %s %s %s" % (wrapped, args, kwargs)
+        return Cursor(results=wrapped(cursor._results, *args, **kwargs),
+                      obj_type=cursor._obj_type)
+    cursor_wrapped.__doc__ = wrapped.__doc__
+    return method
+
 class Cursor(object):
     """Simple wrapper around the cursor (iterator) that comes back from
     pymongo.  We do this so that when you iterate through results from a
     find, you get a generator of Model objects, not a bunch of dicts. """
     def __init__(self, results, obj_type):
+        print "Making a cursor for %s" % results
         self._obj_type = obj_type
         self._results = results
 
     def count(self):
         return self._results.count()
 
-    def sort(self, *args, **kwargs):
-        return Cursor(results=self._results.sort(*args, **kwargs),
-                      obj_type=self._obj_type)
-
-    def limit(self, *args, **kwargs):
-        return Cursor(results=self._results.limit(*args, **kwargs),
-                      obj_type=self._obj_type)
-
-    def skip(self, *args, **kwargs):
-        return Cursor(results=self._results.skip(*args, **kwargs),
-                      obj_type=self._obj_type)
+    sort = cursor_wrapped(PyMongoCursor.sort)
+    limit = cursor_wrapped(PyMongoCursor.limit)
+    skip = cursor_wrapped(PyMongoCursor.skip)
 
     def __iter__(self):
         for i in self._results:
