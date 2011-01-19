@@ -21,7 +21,6 @@ class MongoCollection(object):
 
 def cursor_wrapped(wrapped):
     def method(cursor, *args, **kwargs):
-        print "cursor_wrapped %s %s %s" % (wrapped, args, kwargs)
         return Cursor(results=wrapped(cursor._results, *args, **kwargs),
                       obj_type=cursor._obj_type)
     cursor_wrapped.__doc__ = wrapped.__doc__
@@ -32,7 +31,6 @@ class Cursor(object):
     pymongo.  We do this so that when you iterate through results from a
     find, you get a generator of Model objects, not a bunch of dicts. """
     def __init__(self, results, obj_type):
-        print "Making a cursor for %s" % results
         self._obj_type = obj_type
         self._results = results
 
@@ -150,7 +148,7 @@ class Model(object):
     def collection_name(self):
         return type(self)._collection_name
 
-    def delete(self):
+    def remove(self):
         return self.collection.remove(self._id)
 
     def update(self):

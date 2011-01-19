@@ -70,7 +70,7 @@ class TestSimpleModel(unittest.TestCase):
         dummy_n = TestModel.find({'x': 100})
         self.assertEqual(dummy_n.count(), 1)
         for i in dummy_n:
-            i.delete()
+            i.remove()
 
         dummy_m = TestModel.find({'x': 100})
         self.assertEqual(dummy_m.count(), 0)
