@@ -32,6 +32,11 @@ class TestSimpleModel(unittest.TestCase):
         # Make sure that the contents are the same.
         self.assertEqual(dummy_n.rawdata, dummy_m.rawdata)
 
+        # Make sure that our internal representation is what we expect (and
+        # no extra fields, etc.)
+        self.assertEqual(dummy_m.rawdata, {'x': 1, 'y': 1, '_id': dummy_m._id})
+        self.assertEqual(dummy_n.rawdata, {'x': 1, 'y': 1, '_id': dummy_n._id})
+
     def test_queries(self):
         """Test some more complex query forms."""
         dummy_a = TestModel({'x': 1, 'y': 1}).save()

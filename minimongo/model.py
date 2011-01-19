@@ -3,6 +3,7 @@ import pymongo
 from pymongo.dbref import DBRef
 from minimongo import config
 
+
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
     def __init__(self,
@@ -120,14 +121,14 @@ class Model(object):
 
     def __init__(self, data=None):
         if data:
-            self.__dict__['_data'] = data
+            self.__dict__ = data
         else:
-            self.__dict__['_data'] = {}
+            self.__dict__ = {}
 
     def dbref(self):
         """Return an instance of a DBRef for the current object."""
         return DBRef(collection=self.collection_name,
-                     id=self._data['_id'],
+                     id=self._id,
                      database=self.database_name)
 
     @property
@@ -137,7 +138,7 @@ class Model(object):
     @property
     def rawdata(self):
         """Return the raw document data as a dict."""
-        return self._data
+        return self.__dict__
 
     @property
     def database_name(self):
@@ -148,40 +149,18 @@ class Model(object):
         return type(self)._collection_name
 
     def delete(self):
-        return self.collection.remove(self._data['_id'])
+        return self.collection.remove(self._id)
 
     def update(self):
         self.collection.update(
-            {'_id': self._data['_id']},
-            self._data)
+            {'_id': self._id},
+            self.__dict__)
         return self
 
     def save(self):
-        self.collection.save(self._data)
+        self.collection.save(self.__dict__)
         return self
 
-    def __getattribute__(self, *args):
-        try:
-            ret = object.__getattribute__(self, *args)
-        except AttributeError, _err:
-            try:
-                ret = self._data[args[0]]
-            except AttributeError, _err:
-                ret = object.__getattribute__(type(self).collection, *args)
-        return ret
-
-    def __setitem__(self, key, value):
-        self._data[key] = value
-
-    def __setattr__(self, attr, value):
-        self._data[attr] = value
-
-    def __delattr__(self, attr):
-        del self._data[attr]
-
     def __str__(self):
-        ret = 'Model(' + str(self._data) + ')'
+        ret = 'Model(' + str(self.__dict__) + ')'
         return ret
-
-    def __contains__(self, item):
-        return item in self._data
