@@ -37,9 +37,11 @@ class Cursor(object):
     def count(self):
         return self._results.count()
 
-    sort = cursor_wrapped(PyMongoCursor.sort)
+    # rewind = cursor_wrapped(PyMongoCursor.rewind)
+    clone = cursor_wrapped(PyMongoCursor.clone)
     limit = cursor_wrapped(PyMongoCursor.limit)
     skip = cursor_wrapped(PyMongoCursor.skip)
+    sort = cursor_wrapped(PyMongoCursor.sort)
 
     def __iter__(self):
         for i in self._results:
@@ -54,23 +56,38 @@ class Meta(type):
     _connections = {}
 
     def __new__(mcs, name, bases, data):
-        host = data['mongo'].host
-        port = data['mongo'].port
-        dbname = data['mongo'].database
-        collname = data['mongo'].collection
+        # Pull fields out of the MongoCollection object to get the database
+        # connection parameters, etc.
+        collection_info = data['mongo']
+        host = collection_info.host
+        port = collection_info.port
+        dbname = collection_info.database
+        collname = collection_info.collection
+        
         new_cls = super(Meta, mcs).__new__(mcs, name, bases, data)
-        if host and port and dbname and collname:
-            hostport = (host, port)
+
+        # This constructor runs on the Model class as well as the derived
+        # classes.  When we're a Model, we don't have a proper
+        # configuration, so we just skip the connection stuff below.
+        if name == 'Model':
+            new_cls.db = None
+            new_cls.collection = None
+            return new_cls
+            
+        if not (host and port and dbname and collname):
+            raise Exception('minimongo Model %s %s improperly configured: %s %s %s %s' % (mcs, name, host, port, dbname, collname))
+            
+        hostport = (host, port)
             # Check the connection pool for an existing connection.
-            if hostport in mcs._connections:
-                connection = mcs._connections[hostport]
-            else:
-                connection = pymongo.Connection(host, port)
-                mcs._connections[hostport] = connection
-            new_cls.db = connection[dbname]
-            new_cls.collection = new_cls.db[collname]
-            new_cls._collection_name = collname
-            new_cls._database_name = dbname
+        if hostport in mcs._connections:
+            connection = mcs._connections[hostport]
+        else:
+            connection = pymongo.Connection(host, port)
+        mcs._connections[hostport] = connection
+        new_cls.db = connection[dbname]
+        new_cls.collection = new_cls.db[collname]
+        new_cls._collection_name = collname
+        new_cls._database_name = dbname
         return new_cls
 
     def collection_name(mcs):
