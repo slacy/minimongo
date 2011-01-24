@@ -1,11 +1,12 @@
 Minimongo
 ===========
 
-Minimongo is a lightweight, Pythonic Object-Oriented interface to MongoDB.
+Minimongo is a lightweight, schemaless, Pythonic Object-Oriented interface
+to MongoDB.
 
-It provides a very thin, and dynamicly typed object management layer for any
-data stored in any MongoDB collection, and usese the native pymongo_ query
-syntax.
+It provides a very thin, dynamicly typed (schema-less) object management
+layer for any data stored in any MongoDB collection.  Minimongo directly
+calls the existing pymongo_ query syntax.
 
 Minimongo can easily layer on top of existing MongoDB collections, and will
 work properly with almost any existing schema, even from 3rd party
@@ -87,12 +88,11 @@ modifying a field, and then saving it back again.::
 TODOs & Upcoming features:
 --------------------------
 
-* More template-friendly member accessing.  Return None for missing fields?
-
 * Per-object configuration directives.  Read-only, Rigid (no schema change
-  allowed after read), etc.
+  allowed after read), Type-Rigid (allow changing values, but not changing
+  types), etc.
 
-* Support for automatic DBRef field dereferencing.
+* Support for automatic DBRef field dereferencing via wrapper types.
 
 * Better support for SON and field ordering.  Right now, most things are
   Python dict, which means that ordering is not defined.
@@ -100,12 +100,14 @@ TODOs & Upcoming features:
 * Delta modification tracking so that when you call save(), it doesn't send
   the whole document back to the server to modify one field.
 
-* Support for the mongodb atomic operations like $inc, $push, $pull, etc.
+* Support for the mongodb atomic operations like $inc, $push, $pull, etc via
+  native Python primitives.
 
 * Better support for nested Model objects. (Right now, nested data must be
   of a native Python type, not of another Model).
 
-* Automatic Index creation at database connection time.
+* Automatic Index creation at database connection time, and/or some way to
+  specify index creation on a per-object type basis.
 
 Feedback welcome!
 -----------------
