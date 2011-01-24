@@ -63,7 +63,7 @@ class Meta(type):
         port = collection_info.port
         dbname = collection_info.database
         collname = collection_info.collection
-        
+
         new_cls = super(Meta, mcs).__new__(mcs, name, bases, data)
 
         # This constructor runs on the Model class as well as the derived
@@ -73,10 +73,10 @@ class Meta(type):
             new_cls.db = None
             new_cls.collection = None
             return new_cls
-            
+
         if not (host and port and dbname and collname):
             raise Exception('minimongo Model %s %s improperly configured: %s %s %s %s' % (mcs, name, host, port, dbname, collname))
-            
+
         hostport = (host, port)
             # Check the connection pool for an existing connection.
         if hostport in mcs._connections:
@@ -179,5 +179,10 @@ class Model(object):
         return self
 
     def __str__(self):
-        ret = 'Model(' + str(self.__dict__) + ')'
+        ret = type(self).__name__ + '(' + str(self.__dict__) + ')'
         return ret
+
+    def __unicode__(self):
+        ret = type(self).__name__ + u'(' + str(self.__dict__) + u')'
+        return ret
+
