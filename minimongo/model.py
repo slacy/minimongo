@@ -3,6 +3,7 @@ import pymongo
 from pymongo.dbref import DBRef
 from minimongo import config
 from pymongo.cursor import Cursor as PyMongoCursor
+from pymongo.objectid import ObjectId
 
 
 class MongoCollection(object):
@@ -144,6 +145,9 @@ class Model(object):
 
     def dbref(self):
         """Return an instance of a DBRef for the current object."""
+        if not self._id:
+            self._id = ObjectId()
+        assert self._id != None, "ObjectId must be valid to create DBRef"
         return DBRef(collection=self.collection_name,
                      id=self._id,
                      database=self.database_name)
