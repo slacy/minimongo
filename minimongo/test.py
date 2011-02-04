@@ -2,10 +2,16 @@ import unittest
 
 from minimongo.model import Model, MongoCollection, Index
 
+
 class TestModel(Model):
     """Model class for test cases."""
     mongo = MongoCollection(database='test', collection='minimongo_test')
     indices = (Index('x'),)
+
+
+class TestModelUnique(Model):
+    mongo = MongoCollection(database='test', collection='minimongo_unique')
+    indices = (Index('x', unique=True),)
 
 
 def assertContains(iterator, instance):
@@ -25,6 +31,9 @@ class TestSimpleModel(unittest.TestCase):
         TestModel.drop()
         TestModel.auto_index()
 
+        TestModelUnique.drop()
+        TestModelUnique.auto_index()
+
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
         dummy_m = TestModel({'x': 1, 'y': 1})
@@ -40,13 +49,28 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(dummy_m.rawdata, {'x': 1, 'y': 1, '_id': dummy_m._id})
         self.assertEqual(dummy_n.rawdata, {'x': 1, 'y': 1, '_id': dummy_n._id})
 
-
     def test_index_existance(self):
         """Test that indexes were created properly."""
         indices = TestModel.index_information()
         self.assertEqual(indices['x_1'],
                          {'key': [('x', 1)]})
 
+
+    def test_unique_index(self):
+        """Test behavior of indices with unique=True"""
+        # This will work (y is undefined)
+        x1_a = TestModelUnique({'x': 1}).save()
+        x1_b = TestModelUnique({'x': 1}).save()
+        # Assert that there's only one object in the collection, even though
+        # we inserted two.  The uniqueness constraint on the index has
+        # dropped one of the inserts (silently, I guess).x
+        self.assertEqual(TestModelUnique.find().count(), 1)
+
+        # Even if we use different values for y, it's still only one object:
+        x2_a = TestModelUnique({'x': 2, 'y': 1}).save()
+        x2_b = TestModelUnique({'x': 2, 'y': 2}).save()
+        # There are now 2 objects, one with x=1, one with x=2.
+        self.assertEqual(TestModelUnique.find().count(), 2)
 
     def test_queries(self):
         """Test some more complex query forms."""
