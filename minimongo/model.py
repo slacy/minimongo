@@ -27,6 +27,7 @@ def cursor_wrapped(wrapped):
     cursor_wrapped.__doc__ = wrapped.__doc__
     return method
 
+
 class Cursor(object):
     """Simple wrapper around the cursor (iterator) that comes back from
     pymongo.  We do this so that when you iterate through results from a
@@ -36,6 +37,8 @@ class Cursor(object):
         self._results = results
 
     def count(self):
+        """Analog of the normal count() operation on MongoDB cursors.
+        Returns the number of items matching this query."""
         return self._results.count()
 
     # rewind = cursor_wrapped(PyMongoCursor.rewind)
@@ -76,7 +79,9 @@ class Meta(type):
             return new_cls
 
         if not (host and port and dbname and collname):
-            raise Exception('minimongo Model %s %s improperly configured: %s %s %s %s' % (mcs, name, host, port, dbname, collname))
+            raise Exception(
+                'minimongo Model %s %s improperly configured: %s %s %s %s' % (
+                    mcs, name, host, port, dbname, collname))
 
         hostport = (host, port)
             # Check the connection pool for an existing connection.
@@ -123,10 +128,10 @@ class Meta(type):
         the db."""
         try:
             ret = object.__getattribute__(mcs, *args)
-        except AttributeError, _err:
+        except AttributeError:
             try:
                 ret = object.__getattribute__(mcs.collection, *args)
-            except AttributeError, _err:
+            except AttributeError:
                 ret = object.__getattribute__(mcs.db, *args)
         return ret
 
@@ -154,6 +159,7 @@ class Model(object):
 
     @property
     def id(self):
+        """Return the MongoDB _id value."""
         return self._id
 
     @property
@@ -163,22 +169,27 @@ class Model(object):
 
     @property
     def database_name(self):
+        """Return the name of the MongoDB Database for this class."""
         return type(self)._database_name
 
     @property
     def collection_name(self):
+        """Return the name of the MongoDB collection for this class."""
         return type(self)._collection_name
 
     def remove(self):
+        """Delete this object."""
         return self.collection.remove(self._id)
 
     def update(self):
+        """Update (write) this object."""
         self.collection.update(
             {'_id': self._id},
             self.__dict__)
         return self
 
     def save(self):
+        """Save this Model to it's mongo collection"""
         self.collection.save(self.__dict__)
         return self
 
@@ -189,4 +200,3 @@ class Model(object):
     def __unicode__(self):
         ret = type(self).__name__ + u'(' + str(self.__dict__) + u')'
         return ret
-
