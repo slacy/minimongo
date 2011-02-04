@@ -1,10 +1,11 @@
 import unittest
 
-from minimongo.model import Model, MongoCollection
+from minimongo.model import Model, MongoCollection, Index
 
 class TestModel(Model):
     """Model class for test cases."""
     mongo = MongoCollection(database='test', collection='minimongo_test')
+    indices = (Index('x'),)
 
 
 def assertContains(iterator, instance):
@@ -19,8 +20,10 @@ def assertContains(iterator, instance):
 class TestSimpleModel(unittest.TestCase):
     """Main test case."""
     def setUp(self):
-        """unittest setup, drop the whole collection before starting each test."""
+        """unittest setup, drop the whole collection, then rebuild indices
+        before starting each test."""
         TestModel.drop()
+        TestModel.auto_index()
 
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
@@ -36,6 +39,14 @@ class TestSimpleModel(unittest.TestCase):
         # no extra fields, etc.)
         self.assertEqual(dummy_m.rawdata, {'x': 1, 'y': 1, '_id': dummy_m._id})
         self.assertEqual(dummy_n.rawdata, {'x': 1, 'y': 1, '_id': dummy_n._id})
+
+
+    def test_index_existance(self):
+        """Test that indexes were created properly."""
+        indices = TestModel.index_information()
+        self.assertEqual(indices['x_1'],
+                         {'key': [('x', 1)]})
+
 
     def test_queries(self):
         """Test some more complex query forms."""

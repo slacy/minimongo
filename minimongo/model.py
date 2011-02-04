@@ -5,7 +5,6 @@ from minimongo import config
 from pymongo.cursor import Cursor as PyMongoCursor
 from pymongo.objectid import ObjectId
 
-
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
     def __init__(self,
@@ -63,6 +62,10 @@ class Meta(type):
         # Pull fields out of the MongoCollection object to get the database
         # connection parameters, etc.
         collection_info = data['mongo']
+        if 'indices' in data:
+            index_info = data['indices']
+        else:
+            index_info = []
         host = collection_info.host
         port = collection_info.port
         dbname = collection_info.database
@@ -94,7 +97,21 @@ class Meta(type):
         new_cls.collection = new_cls.db[collname]
         new_cls._collection_name = collname
         new_cls._database_name = dbname
+        new_cls._index_info = index_info
+
+        # Generate all our indices automatically when the class is
+        # instantiated.  This will result in calls to pymongo's
+        # ensure_index() method at import time, so import all your models up
+        # front.
+        new_cls.auto_index()
+
         return new_cls
+
+    def auto_index(mcs):
+        """Build all indices for this collection specified in the definition
+        of the Model."""
+        for index in mcs._index_info:
+            index.ensure(mcs.collection)
 
     def collection_name(mcs):
         """Return the name of the MongDB collection for the current Model."""
@@ -200,3 +217,18 @@ class Model(object):
     def __unicode__(self):
         ret = type(self).__name__ + u'(' + str(self.__dict__) + u')'
         return ret
+
+
+class Index(object):
+    """Just a simple container class holding the arguments that are passed
+    directly to pymongo's ensure_index method."""
+    def __init__(self, *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
+
+    def ensure(self, collection):
+        """Call pymongo's ensure_index on the given collection with the
+        stored args."""
+        return collection.ensure_index(*self._args, **self._kwargs)
+
+
