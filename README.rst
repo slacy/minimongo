@@ -106,9 +106,6 @@ TODOs & Upcoming features:
 * Better support for nested Model objects. (Right now, nested data must be
   of a native Python type, not of another Model).
 
-* Automatic Index creation at database connection time, and/or some way to
-  specify index creation on a per-object type basis.
-
 Feedback welcome!
 -----------------
 
