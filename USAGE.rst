@@ -96,7 +96,7 @@ Additional Features
 
 
 **Index Support** Indices can be specified per collection, and are created (via
-ensure_inedex) at the time your Model classes are imported.  The synax is as follows:
+ensure_inedex) at the time your Model classes are imported.  The synax is as follows::
 
   class MyCollection(Model):
       mongo = MongoCollection(database='test', collection='tmp')
@@ -104,7 +104,7 @@ ensure_inedex) at the time your Model classes are imported.  The synax is as fol
                  Index('y'),)
 
 
-This would result in two calls to pymongo as follows:
+This would result in two calls to pymongo as follows::
 
   collection.ensure_index('x')
   collection.ensure_index('y')
