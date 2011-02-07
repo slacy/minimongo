@@ -9,7 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 requires = ['pymongo']
 
 setup(name='minimongo',
-      version='0.1.1',
+      version='0.1.2',
       description='Minimal database Model management for MongoDB',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
