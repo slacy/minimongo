@@ -59,6 +59,13 @@ Major features
   Pymongo_.  This means as features are added to Pymongo_, they will be
   automatically accessible via Minimongo.
 
+* **Easy Index creation & management.**
+
+  Indices for a given collection can be specified at declaration time.  This
+  results in automatic calls to pymongo_'s ensure_index() function at the
+  time your program starts up.  Therefore, all the proper indices for your
+  collections are always in place.
+
 * **Easily extensible.**
 
   Minimongo-derived objects can be easily extended to add new functionality.
@@ -75,12 +82,23 @@ modifying a field, and then saving it back again.::
   from minimongo import Model, MongoCollection
 
   class MyCollection(Model):
+      # Here, we specify the database and collection names.
+      # A connection to your DB is automatically created.
       mongo = MongoCollection(database='test', collection='minimongo.example')
 
+      # Now, we programatically declare what indices we want.
+      # The arguments to the Index constructor are identical to the args to
+      # pymongo's ensure_index function.
+      indices = (Index('x'),)
+
   if __name__ == '__main__':
+      # Create & save an object, and return a local inmemory copy of it:
       obj = MyCollection({'x': 1, 'y': 2}).save()
 
+      # Find that object again, loading it into memory:
       res = MyCollection.find({'x': 1})
+
+      # Change a field value, and save it back to the DB.
       res.other = 'some data'
       res.save()
 

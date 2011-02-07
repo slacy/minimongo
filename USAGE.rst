@@ -95,9 +95,28 @@ Additional Features
       re_first = First.from_dbref(second.first)
 
 
+**Index Support** Indices can be specified per collection, and are created (via
+ensure_inedex) at the time your Model classes are imported.  The synax is as follows:
+
+  class MyCollection(Model):
+      mongo = MongoCollection(database='test', collection='tmp')
+      indices = (Index('x'),
+                 Index('y'),)
+
+
+This would result in two calls to pymongo as follows:
+
+  collection.ensure_index('x')
+  collection.ensure_index('y')
+
+The arguments to the Index constructor are passed directly to ensure_index,
+unmodified.  So, please see the pymongo documentation for create_index and
+ensure_index for the possible options to use there.
+
 **Raw Field Support** If you need raw access to the internal fields, then
 each derived Model provides a rawdata() method call.  You can use this to
 return the internal dict of values that are going to be stored.
+
 
 Additional Info
 ---------------
