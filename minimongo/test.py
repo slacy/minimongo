@@ -1,6 +1,7 @@
 import unittest
 
 from minimongo.model import Model, MongoCollection, Index
+from minimongo.model import json_fixup
 
 
 class TestModel(Model):
@@ -13,6 +14,14 @@ class TestModelUnique(Model):
     mongo = MongoCollection(database='test', collection='minimongo_unique')
     indices = (Index('x', unique=True),)
 
+class TestModelWithFixup(Model):
+    mongo = MongoCollection(database='test', collection='minimongo_fixup',
+                            fixup_field_names=True)
+
+class TestModelWithoutFixup(Model):
+    mongo = MongoCollection(database='test', collection='minimongo_fixup',
+                            fixup_field_names=False)
+
 
 def assertContains(iterator, instance):
     """Given an iterable of Models, make sure that the instance (of a Model)
@@ -21,6 +30,46 @@ def assertContains(iterator, instance):
         if i.rawdata == instance.rawdata:
             return True
     return False
+
+class TestJsonFixup(unittest.TestCase):
+    """Simple test for the json_fixup method."""
+
+    def test_unmodified(self):
+        """Test json_fixup unmodified."""
+        data = {'a': 'b',
+                'c': 1,
+                'd': ('x', 'y')}
+        new_data = json_fixup(data)
+        self.assertEqual(new_data, data)
+
+    def test_modify_easy(self):
+        """Testing simple json_fixup of toplevel keys."""
+        data = {'a-b': 'b',
+                'c d': 1,
+                'e': ('x-y', 'u v')}
+        new_data = json_fixup(data)
+        self.assertEqual(new_data,
+                         {'a_b': 'b',
+                          'c_d': 1,
+                          'e': ('x-y', 'u v')})
+
+    def test_modify_deep(self):
+        data = {'a': {'b-c': 'd',
+                      'e': { 'f g': 'h',
+                             'i-j': 'k',},
+                      },
+                'l': 'm',
+                'n': { 'o-p': 'q'},
+                }
+        new_data = json_fixup(data)
+        expected_data = {'a': {'b_c': 'd',
+                               'e': { 'f_g': 'h',
+                                      'i_j': 'k',},
+                               },
+                         'l': 'm',
+                         'n': { 'o_p': 'q'},
+                         }
+        self.assertEqual(new_data, expected_data)
 
 
 class TestSimpleModel(unittest.TestCase):
@@ -33,6 +82,11 @@ class TestSimpleModel(unittest.TestCase):
 
         TestModelUnique.drop()
         TestModelUnique.auto_index()
+
+    def tearDown(self):
+        """unittest teardown, drop the whole collection."""
+        TestModel.drop()
+        TestModelUnique.drop()
 
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
@@ -181,6 +235,41 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(TestModel.database_name(), 'test')
         self.assertEqual(dummy_a.collection_name, 'minimongo_test')
         self.assertEqual(TestModel.collection_name(), 'minimongo_test')
+
+
+class TestModelFixup(unittest.TestCase):
+    """Main test case."""
+    def setUp(self):
+        """unittest setup, drop the whole collection."""
+        TestModelWithFixup.drop()
+        TestModelWithoutFixup.drop()
+
+    def tearDown(self):
+        """unittest teardown, drop the whole collection."""
+        TestModelWithFixup.drop()
+        TestModelWithoutFixup.drop()
+
+    def test_simple_fixup(self):
+        """Test a model with fixup from initializer."""
+        m = TestModelWithFixup({'a-b': 'c'})
+        self.assertEqual(m.a_b, 'c')
+
+    def test_no_fixup(self):
+        """Test Model with and without fixup in the DB."""
+        m = TestModelWithoutFixup({'a-b': 'c'})
+        m.save()
+        n = TestModelWithoutFixup.find_one()
+        self.assertEqual(m.rawdata, n.rawdata)
+
+        # Since TestModelWith/WithoutFixup share the same collection, this
+        # will find the non fixed-up object on disk, load it, and fix it up
+        # in-memory.  The save will write out the fixed up data.
+        o = TestModelWithFixup.find_one()
+        self.assertEqual(o.rawdata, {'a_b': 'c', '_id': o.id})
+        o.save()
+        p = TestModelWithoutFixup.find_one()
+        self.assertEqual(o.rawdata, p.rawdata)
+
 
 if __name__ == '__main__':
     unittest.main()
