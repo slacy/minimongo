@@ -5,12 +5,16 @@ from minimongo import config
 from pymongo.cursor import Cursor as PyMongoCursor
 from pymongo.objectid import ObjectId
 
+class Collection(object):
+    pass
+
+class Database(object):
+    pass
+
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
     def __init__(self,
                  host=None, port=None, database=None, collection=None,
-                 # Data treatment options below
-                 fixup_field_names=True,
                  ):
         if not host:
             host = config.MONGODB_HOST
@@ -20,7 +24,6 @@ class MongoCollection(object):
         self.port = port
         self.database = database
         self.collection = collection
-        self.fixup_field_names = fixup_field_names
 
 
 def cursor_wrapped(wrapped):
@@ -29,34 +32,6 @@ def cursor_wrapped(wrapped):
                       obj_type=cursor._obj_type)
     cursor_wrapped.__doc__ = wrapped.__doc__
     return method
-
-
-def json_fixup(data_dict):
-    """Recursively modify data_dict and modify any keys that have spaces or
-    other invalid python constructs.
-
-    This is necessary because JSON (from the web and from mongodb) allows
-    for field names that aren't proper JSON identifiers.  For example, they
-    could include '-', ' ', '$', etc.  These won't work if we want to access
-    the fields in an object-like way.  So, we fix them up here an
-    initialization time."""
-    for key in data_dict.keys():
-        mod = False
-        oldkey = key
-        if isinstance(data_dict[key], dict):
-            value = json_fixup(data_dict[key])
-        else:
-            value = data_dict[key]
-        if '-' in key:
-            key = key.replace('-', '_')
-            mod = True
-        if ' ' in key:
-            key = key.replace(' ', '_')
-            mod = True
-        if mod:
-            data_dict[key] = value
-            del data_dict[oldkey]
-    return data_dict
 
 
 class Cursor(object):
@@ -168,7 +143,7 @@ class Meta(type):
         in a Model object of the correct type."""
         data = mcs.collection.find_one(*args, **kwargs)
         if data:
-            return mcs(data)
+            return mcs(data=data)
         return None
 
     def __getattribute__(mcs, *args):
@@ -177,10 +152,10 @@ class Meta(type):
         the db."""
         try:
             ret = object.__getattribute__(mcs, *args)
-        except AttributeError:
+        except AttributeError, excn:
             try:
                 ret = object.__getattribute__(mcs.collection, *args)
-            except AttributeError:
+            except AttributeError, excn2:
                 ret = object.__getattribute__(mcs.db, *args)
         return ret
 
@@ -188,20 +163,17 @@ class Meta(type):
 class Model(object):
     """Base class for all Minimongo objects.  Derive from this class."""
     __metaclass__ = Meta
-    mongo = MongoCollection(host=None, port=None,
-                            database=None, collection=None)
+    mongo = MongoCollection()
 
     def __init__(self, data=None):
         if data:
-            if self.mongo.fixup_field_names:
-                data = json_fixup(data)
             self.__dict__ = data
         else:
             self.__dict__ = {}
 
     def dbref(self):
         """Return an instance of a DBRef for the current object."""
-        if not self._id:
+        if not hasattr(self,'_id'):
             self._id = ObjectId()
         assert self._id != None, "ObjectId must be valid to create DBRef"
         return DBRef(collection=self.collection_name,
@@ -264,5 +236,3 @@ class Index(object):
         """Call pymongo's ensure_index on the given collection with the
         stored args."""
         return collection.ensure_index(*self._args, **self._kwargs)
-
-
