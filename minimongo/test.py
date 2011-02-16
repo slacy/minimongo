@@ -8,10 +8,18 @@ class TestModel(Model):
     mongo = MongoCollection(database='test', collection='minimongo_test')
     indices = (Index('x'),)
 
+    def a_method(self):
+        self.x = 123
+        self.y = 456
+        self.save()
 
 class TestModelUnique(Model):
     mongo = MongoCollection(database='test', collection='minimongo_unique')
     indices = (Index('x', unique=True),)
+
+
+class TestDerivedModel(TestModel):
+    mongo = MongoCollection(database='test', collection='minimongo_derived')
 
 
 
@@ -26,18 +34,21 @@ def assertContains(iterator, instance):
 class TestSimpleModel(unittest.TestCase):
     """Main test case."""
     def setUp(self):
-        """unittest setup, drop the whole collection, then rebuild indices
-        before starting each test."""
+        """unittest setup, drop all collections, and rebuild indices before
+        starting each test."""
         TestModel.collection.drop()
         TestModel.auto_index()
 
         TestModelUnique.collection.drop()
         TestModelUnique.auto_index()
 
+        TestDerivedModel.collection.drop()
+
     def tearDown(self):
-        """unittest teardown, drop the whole collection."""
+        """unittest teardown, drop all collections."""
         TestModel.collection.drop()
         TestModelUnique.collection.drop()
+        TestDerivedModel.collection.drop()
 
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
@@ -188,6 +199,17 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(TestModel.database.name, 'test')
         self.assertEqual(dummy_a.collection.name, 'minimongo_test')
         self.assertEqual(TestModel.collection.name, 'minimongo_test')
+
+    def test_derived(self):
+        """Test Models that are derived from other models."""
+        der = TestDerivedModel()
+        der.a_method()
+
+        self.assertEqual(der.database.name, 'test')
+        self.assertEqual(der.collection.name, 'minimongo_derived')
+
+        found = TestDerivedModel.collection.find_one({'x': 123})
+        self.assertEqual(der, found)
 
 
 if __name__ == '__main__':
