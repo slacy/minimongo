@@ -96,7 +96,7 @@ modifying a field, and then saving it back again.::
       obj = MyCollection({'x': 1, 'y': 2}).save()
 
       # Find that object again, loading it into memory:
-      res = MyCollection.find({'x': 1})
+      res = MyCollection.collection.find_one({'x': 1})
 
       # Change a field value, and save it back to the DB.
       res.other = 'some data'

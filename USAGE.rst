@@ -51,7 +51,7 @@ a quick example::
   another_obj = MyCollection({'x':1, 'y':3}).save()
 
   # And the query syntax is exactly the same as pymongo.
-  found_objects = MyCollection.find({'x':1})
+  found_objects = MyCollection.collection.find({'x':1})
 
   # found_objects is an iterable, just like in pymongo.
   for obj in found_objects:
@@ -92,7 +92,7 @@ Additional Features
 
       # Given the reference, fetch the object.  're_first' and 'first'
       # are now two instances of the same object.
-      re_first = First.from_dbref(second.first)
+      re_first = First.collection.from_dbref(second.first)
 
 
 **Index Support** Indices can be specified per collection, and are created (via
