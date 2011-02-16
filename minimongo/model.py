@@ -1,21 +1,48 @@
 #!/bin/python
 import pymongo
-from pymongo.dbref import DBRef
+import pymongo.collection
+import pymongo.database
+import pymongo.dbref
 from minimongo import config
-from pymongo.cursor import Cursor as PyMongoCursor
-from pymongo.objectid import ObjectId
 
-class Collection(object):
-    pass
 
-class Database(object):
-    pass
+class Collection(pymongo.collection.Collection):
+    def __init__(self, database, name, options=None,
+                 create=False, **kwargs):
+        self._document_class = kwargs['document_class']
+        del kwargs['document_class']
+        return super(Collection, self).__init__(
+            database, name, options, create, **kwargs)
+
+    def find(self, *args, **kwargs):
+        """find"""
+        kwargs['as_class'] = self._document_class
+        return super(Collection, self).find(*args, **kwargs)
+
+    def find_one(self, *args, **kwargs):
+        """find_one"""
+        kwargs['as_class'] = self._document_class
+        return super(Collection, self).find_one(*args, **kwargs)
+
+    def from_dbref(self, dbref):
+        """Given a DBRef, return an instance."""
+        return self.find_one({'_id': dbref.id})
+
+
+class Database(pymongo.database.Database):
+    """Wrapper for pymongo's Database class."""
+    def __init__(self, connection, name):
+        self._database = connection[name]
+        super(Database, self).__init__(connection, name)
+
+    def collection(self, collection_name, document_class):
+        """Return a wrapped Collection object."""
+        return Collection(self._database, collection_name,
+                          document_class=document_class)
 
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
-    def __init__(self,
-                 host=None, port=None, database=None, collection=None,
-                 ):
+    def __init__(self, host=None, port=None, database=None, collection=None):
         if not host:
             host = config.MONGODB_HOST
         if not port:
@@ -24,38 +51,6 @@ class MongoCollection(object):
         self.port = port
         self.database = database
         self.collection = collection
-
-
-def cursor_wrapped(wrapped):
-    def method(cursor, *args, **kwargs):
-        return Cursor(results=wrapped(cursor._results, *args, **kwargs),
-                      obj_type=cursor._obj_type)
-    cursor_wrapped.__doc__ = wrapped.__doc__
-    return method
-
-
-class Cursor(object):
-    """Simple wrapper around the cursor (iterator) that comes back from
-    pymongo.  We do this so that when you iterate through results from a
-    find, you get a generator of Model objects, not a bunch of dicts. """
-    def __init__(self, results, obj_type):
-        self._obj_type = obj_type
-        self._results = results
-
-    def count(self):
-        """Analog of the normal count() operation on MongoDB cursors.
-        Returns the number of items matching this query."""
-        return self._results.count()
-
-    # rewind = cursor_wrapped(PyMongoCursor.rewind)
-    clone = cursor_wrapped(PyMongoCursor.clone)
-    limit = cursor_wrapped(PyMongoCursor.limit)
-    skip = cursor_wrapped(PyMongoCursor.skip)
-    sort = cursor_wrapped(PyMongoCursor.sort)
-
-    def __iter__(self):
-        for i in self._results:
-            yield(self._obj_type(i))
 
 
 class Meta(type):
@@ -84,7 +79,7 @@ class Meta(type):
         # classes.  When we're a Model, we don't have a proper
         # configuration, so we just skip the connection stuff below.
         if name == 'Model':
-            new_cls.db = None
+            new_cls.database = None
             new_cls.collection = None
             return new_cls
 
@@ -94,16 +89,15 @@ class Meta(type):
                     mcs, name, host, port, dbname, collname))
 
         hostport = (host, port)
-            # Check the connection pool for an existing connection.
+        # Check the connection pool for an existing connection.
         if hostport in mcs._connections:
             connection = mcs._connections[hostport]
         else:
             connection = pymongo.Connection(host, port)
         mcs._connections[hostport] = connection
-        new_cls.db = connection[dbname]
-        new_cls.collection = new_cls.db[collname]
-        new_cls._collection_name = collname
-        new_cls._database_name = dbname
+        new_cls.database = Database(connection, dbname)
+        new_cls.collection = new_cls.database.collection(
+            collname, document_class=new_cls)
         new_cls._index_info = index_info
 
         # Generate all our indices automatically when the class is
@@ -120,109 +114,46 @@ class Meta(type):
         for index in mcs._index_info:
             index.ensure(mcs.collection)
 
-    def collection_name(mcs):
-        """Return the name of the MongDB collection for the current Model."""
-        return mcs._collection_name
 
-    def database_name(mcs):
-        """Return the name of the MongDB database for the current Model."""
-        return mcs._database_name
-
-    def from_dbref(mcs, dbref):
-        """Given a DBRef, return an instance."""
-        return mcs.find_one({'_id': dbref.id})
-
-    def find(mcs, *args, **kwargs):
-        """Passthrough to pymongo's find() method, and wrap the results in a
-        Cursor object so that we get Model objects while iterating."""
-        results = mcs.collection.find(*args, **kwargs)
-        return Cursor(results, mcs)
-
-    def find_one(mcs, *args, **kwargs):
-        """Passthrough to pymongo's find_one() method, and wrap the results
-        in a Model object of the correct type."""
-        data = mcs.collection.find_one(*args, **kwargs)
-        if data:
-            return mcs(data=data)
-        return None
-
-    def __getattribute__(mcs, *args):
-        """This gets invoked for things that look like classmethods.  First
-        we try the attribute from self, then from the collection, then from
-        the db."""
-        try:
-            ret = object.__getattribute__(mcs, *args)
-        except AttributeError, excn:
-            try:
-                ret = object.__getattribute__(mcs.collection, *args)
-            except AttributeError, excn2:
-                ret = object.__getattribute__(mcs.db, *args)
-        return ret
-
-
-class Model(object):
+class Model(dict, object):
     """Base class for all Minimongo objects.  Derive from this class."""
     __metaclass__ = Meta
     mongo = MongoCollection()
 
-    def __init__(self, data=None):
-        if data:
-            self.__dict__ = data
-        else:
-            self.__dict__ = {}
+    def __init__(self, initial_value=None):
+        super(Model, self).__init__(self)
+        if initial_value:
+            self.update(initial_value)
+        self.__dict__ = self
 
     def dbref(self):
         """Return an instance of a DBRef for the current object."""
-        if not hasattr(self,'_id'):
-            self._id = ObjectId()
+        if not hasattr(self, '_id'):
+            self._id = pymongo.ObjectId()
         assert self._id != None, "ObjectId must be valid to create DBRef"
-        return DBRef(collection=self.collection_name,
-                     id=self._id,
-                     database=self.database_name)
-
-    @property
-    def id(self):
-        """Return the MongoDB _id value."""
-        return self._id
-
-    @property
-    def rawdata(self):
-        """Return the raw document data as a dict."""
-        return self.__dict__
-
-    @property
-    def database_name(self):
-        """Return the name of the MongoDB Database for this class."""
-        return type(self)._database_name
-
-    @property
-    def collection_name(self):
-        """Return the name of the MongoDB collection for this class."""
-        return type(self)._collection_name
+        return pymongo.dbref.DBRef(collection=self.collection.name,
+                                   id=self._id,
+                                   database=self.database.name)
 
     def remove(self):
         """Delete this object."""
         return self.collection.remove(self._id)
 
-    def update(self):
+    def mongo_update(self):
         """Update (write) this object."""
-        self.collection.update(
-            {'_id': self._id},
-            self.__dict__)
+        self.collection.update({'_id': self._id}, self)
         return self
 
     def save(self):
         """Save this Model to it's mongo collection"""
-        self.collection.save(self.__dict__)
+        self.collection.save(self)
         return self
 
     def __str__(self):
-        ret = type(self).__name__ + '(' + str(self.__dict__) + ')'
-        return ret
+        return type(self).__name__ + '(' + str(self) + ')'
 
     def __unicode__(self):
-        ret = type(self).__name__ + u'(' + str(self.__dict__) + u')'
-        return ret
+        return type(self).__name__ + u'(' + str(self) + u')'
 
 
 class Index(object):
