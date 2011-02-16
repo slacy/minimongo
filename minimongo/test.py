@@ -46,15 +46,31 @@ class TestSimpleModel(unittest.TestCase):
 
     def tearDown(self):
         """unittest teardown, drop all collections."""
-        TestModel.collection.drop()
-        TestModelUnique.collection.drop()
-        TestDerivedModel.collection.drop()
+        # TestModel.collection.drop()
+        # TestModelUnique.collection.drop()
+        # TestDerivedModel.collection.drop()
+
+    def test_dictyness(self):
+        item = TestModel({'x': 642})
+
+        self.assertEqual(item['x'], 642)
+        self.assertEqual(item.x, 642)
+
+        item.y = 426
+        self.assertEqual(item['y'], 426)
+        self.assertEqual(item.y, 426)
+
+        self.assertEqual(sorted(item.keys()), ['x', 'y'])
+
 
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
         dummy_m = TestModel({'x': 1, 'y': 1})
+        dummy_m.z = 1
         dummy_m.save()
+
         dummy_n = TestModel.collection.find_one({'x': 1})
+
         # Make sure that the find_one method returns the right type.
         self.assertEqual(type(dummy_n), TestModel)
         # Make sure that the contents are the same.
@@ -62,8 +78,8 @@ class TestSimpleModel(unittest.TestCase):
 
         # Make sure that our internal representation is what we expect (and
         # no extra fields, etc.)
-        self.assertEqual(dummy_m, {'x': 1, 'y': 1, '_id': dummy_m._id})
-        self.assertEqual(dummy_n, {'x': 1, 'y': 1, '_id': dummy_n._id})
+        self.assertEqual(dummy_m, {'x': 1, 'y': 1, 'z': 1, '_id': dummy_m._id})
+        self.assertEqual(dummy_n, {'x': 1, 'y': 1, 'z': 1, '_id': dummy_n._id})
 
     def test_index_existance(self):
         """Test that indexes were created properly."""
@@ -118,6 +134,7 @@ class TestSimpleModel(unittest.TestCase):
         dummy_m = TestModel()
         dummy_m.x = 100
         dummy_m.y = 200
+        print "calling save"
         dummy_m.save()
 
         dummy_n = TestModel.collection.find({'x': 100})

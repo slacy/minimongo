@@ -110,16 +110,23 @@ class Meta(type):
             index.ensure(mcs.collection)
 
 
-class Model(dict, object):
+class Model(dict):
     """Base class for all Minimongo objects.  Derive from this class."""
     __metaclass__ = Meta
     mongo = MongoCollection()
 
+    # These lines make this object behave both like a dict (x['y']) and like
+    # an object (x.y)
+    def __getattr__(*args, **kwargs):
+        return dict.__getitem__(*args, **kwargs)
+    def __setattr__(*args, **kwargs):
+        return dict.__setitem__(*args, **kwargs)
+    def __delattr__(self, key):
+        del self[key]
+
     def __init__(self, initial_value=None):
-        super(Model, self).__init__(self)
         if initial_value:
-            self.update(initial_value)
-        self.__dict__ = self
+            super(Model, self).__init__(initial_value)
 
     def dbref(self):
         """Return an instance of a DBRef for the current object."""
@@ -145,10 +152,10 @@ class Model(dict, object):
         return self
 
     def __str__(self):
-        return type(self).__name__ + '(' + str(self) + ')'
+        return type(self).__name__ + '(' + str(dict(self)) + ')'
 
     def __unicode__(self):
-        return type(self).__name__ + u'(' + str(self) + u')'
+        return type(self).__name__ + u'(' + str(dict(self)) + u')'
 
 
 class Index(object):
