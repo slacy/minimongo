@@ -7,6 +7,9 @@ from minimongo import config
 
 
 class Collection(pymongo.collection.Collection):
+    """A Wrapper around pymongo.Collection that provides the same
+    functionality, but stores the document class of the Collection we're
+    working with, so that find and find_one can return the right classes."""
     def __init__(self, database, name, options=None,
                  create=False, **kwargs):
         self._document_class = kwargs['document_class']
@@ -15,30 +18,21 @@ class Collection(pymongo.collection.Collection):
             database, name, options, create, **kwargs)
 
     def find(self, *args, **kwargs):
-        """find"""
+        """same as pymongo.Collection.find except it returns the right
+        document type."""
         kwargs['as_class'] = self._document_class
         return super(Collection, self).find(*args, **kwargs)
 
     def find_one(self, *args, **kwargs):
-        """find_one"""
+        """same as pymongo.Collection.find_one except it returns the right
+        document type"""
         kwargs['as_class'] = self._document_class
         return super(Collection, self).find_one(*args, **kwargs)
 
     def from_dbref(self, dbref):
-        """Given a DBRef, return an instance."""
+        """Given a DBRef, return an instance of this type."""
         return self.find_one({'_id': dbref.id})
 
-
-class Database(pymongo.database.Database):
-    """Wrapper for pymongo's Database class."""
-    def __init__(self, connection, name):
-        self._database = connection[name]
-        super(Database, self).__init__(connection, name)
-
-    def collection(self, collection_name, document_class):
-        """Return a wrapped Collection object."""
-        return Collection(self._database, collection_name,
-                          document_class=document_class)
 
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
@@ -95,9 +89,10 @@ class Meta(type):
         else:
             connection = pymongo.Connection(host, port)
         mcs._connections[hostport] = connection
-        new_cls.database = Database(connection, dbname)
-        new_cls.collection = new_cls.database.collection(
-            collname, document_class=new_cls)
+        new_cls.database = connection[dbname]
+        new_cls.collection = Collection(new_cls.database,
+                                        collname,
+                                        document_class=new_cls)
         new_cls._index_info = index_info
 
         # Generate all our indices automatically when the class is

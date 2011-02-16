@@ -92,6 +92,8 @@ class TestSimpleModel(unittest.TestCase):
         list_y1 = list(found_y1)
         list_x2y2 = list(found_x2y2)
 
+        # make sure the types of the things coming back from find() are the
+        # derived Model types, not just a straight dict.
         self.assertEqual(type(list_x1[0]), TestModel)
 
         self.assertTrue(assertContains(list_x1, dummy_a))
