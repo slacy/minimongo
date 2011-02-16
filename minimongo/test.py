@@ -62,6 +62,12 @@ class TestSimpleModel(unittest.TestCase):
 
         self.assertEqual(sorted(item.keys()), ['x', 'y'])
 
+        del item['x']
+        self.assertEqual(item, {'y': 426})
+        item.z = 3
+        del item.y
+        self.assertEqual(item, {'z': 3})
+
 
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
@@ -134,7 +140,6 @@ class TestSimpleModel(unittest.TestCase):
         dummy_m = TestModel()
         dummy_m.x = 100
         dummy_m.y = 200
-        print "calling save"
         dummy_m.save()
 
         dummy_n = TestModel.collection.find({'x': 100})
