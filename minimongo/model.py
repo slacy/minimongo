@@ -36,7 +36,11 @@ class Collection(pymongo.collection.Collection):
 
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
-    def __init__(self, host=None, port=None, database=None, collection=None):
+    def __init__(self, host=None, port=None, database=None, collection=None,
+                 placeholder=False):
+        if placeholder:
+            if host or port or database or collection:
+                raise Exception("Placeholder configs can't also specify other params")
         if not host:
             host = config.MONGODB_HOST
         if not port:
@@ -45,6 +49,7 @@ class MongoCollection(object):
         self.port = port
         self.database = database
         self.collection = collection
+        self.placeholder = placeholder
 
 
 class Meta(type):
@@ -72,12 +77,13 @@ class Meta(type):
         # This constructor runs on the Model class as well as the derived
         # classes.  When we're a Model, we don't have a proper
         # configuration, so we just skip the connection stuff below.
-        if name == 'Model':
+        if collection_info.placeholder:
             new_cls.database = None
             new_cls.collection = None
             return new_cls
 
-        if not (host and port and dbname and collname):
+        if (not collection_info.placeholder
+            and not (host and port and dbname and collname)):
             raise Exception(
                 'minimongo Model %s %s improperly configured: %s %s %s %s' % (
                     mcs, name, host, port, dbname, collname))
@@ -113,7 +119,7 @@ class Meta(type):
 class Model(dict):
     """Base class for all Minimongo objects.  Derive from this class."""
     __metaclass__ = Meta
-    mongo = MongoCollection()
+    mongo = MongoCollection(placeholder=True)
 
     # These lines make this object behave both like a dict (x['y']) and like
     # an object (x.y)

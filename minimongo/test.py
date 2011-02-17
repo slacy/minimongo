@@ -22,7 +22,6 @@ class TestDerivedModel(TestModel):
     mongo = MongoCollection(database='test', collection='minimongo_derived')
 
 
-
 def assertContains(iterator, instance):
     """Given an iterable of Models, make sure that the instance (of a Model)
     is inside the iterable."""
