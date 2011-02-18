@@ -3,6 +3,7 @@ import pymongo
 import pymongo.collection
 import pymongo.database
 import pymongo.dbref
+import pymongo.objectid
 from minimongo import config
 
 
@@ -122,13 +123,27 @@ class Model(dict):
     mongo = MongoCollection(placeholder=True)
 
     # These lines make this object behave both like a dict (x['y']) and like
-    # an object (x.y)
+    # an object (x.y).  We have to translate from KeyError to AttributeError
+    # since model.undefined raises a KeyError and model['undefined'] raises
+    # a KeyError.  we don't ever want __getattr__ to raise a KeyError, so we
+    # "translate" them below:
     def __getattr__(*args, **kwargs):
-        return dict.__getitem__(*args, **kwargs)
+        try:
+            return dict.__getitem__(*args, **kwargs)
+        except KeyError, excn:
+            raise AttributeError(excn)
+
     def __setattr__(*args, **kwargs):
-        return dict.__setitem__(*args, **kwargs)
+        try:
+            return dict.__setitem__(*args, **kwargs)
+        except KeyError, excn:
+            raise AttributeError(excn)
+
     def __delattr__(self, key):
-        del self[key]
+        try:
+            del self[key]
+        except KeyError, excn:
+            raise AttributeError(excn)
 
     def __init__(self, initial_value=None):
         if initial_value:
@@ -137,7 +152,7 @@ class Model(dict):
     def dbref(self):
         """Return an instance of a DBRef for the current object."""
         if not hasattr(self, '_id'):
-            self._id = pymongo.ObjectId()
+            self._id = pymongo.objectid.ObjectId()
         assert self._id != None, "ObjectId must be valid to create DBRef"
         return pymongo.dbref.DBRef(collection=self.collection.name,
                                    id=self._id,
