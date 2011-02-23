@@ -1,5 +1,5 @@
-import unittest
-
+import unittest2 as unittest
+from pymongo.errors import DuplicateKeyError
 from minimongo.model import Model, MongoCollection, Index
 
 
@@ -108,6 +108,15 @@ class TestSimpleModel(unittest.TestCase):
         x2_b = TestModelUnique({'x': 2, 'y': 2}).save()
         # There are now 2 objects, one with x=1, one with x=2.
         self.assertEqual(TestModelUnique.collection.find().count(), 2)
+
+    def test_unique_constraint(self):
+        x1_a = TestModelUnique({'x': 1, 'y': 1})
+        x1_b = TestModelUnique({'x': 1, 'y': 2})
+        x1_a.save(safe=True)
+        with self.assertRaises(DuplicateKeyError):
+            x1_b.save(safe=True)
+        x1_c = TestModelUnique({'x': 2, 'y': 1})
+        x1_c.save()
 
     def test_queries(self):
         """Test some more complex query forms."""

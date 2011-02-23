@@ -167,9 +167,9 @@ class Model(dict):
         self.collection.update({'_id': self._id}, self)
         return self
 
-    def save(self):
+    def save(self, *args, **kwargs):
         """Save this Model to it's mongo collection"""
-        self.collection.save(self)
+        self.collection.save(self, *args, **kwargs)
         return self
 
     def __str__(self):

@@ -6,10 +6,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
-requires = ['pymongo']
+requires = ['pymongo', 'unittest2']
 
 setup(name='minimongo',
-      version='0.2.4',
+      version='0.2.5',
       description='Minimal database Model management for MongoDB',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
