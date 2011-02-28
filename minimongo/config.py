@@ -30,7 +30,7 @@ def _resolve_name(name, package, level):
             dot = package.rindex('.', 0, dot)
         except ValueError:
             raise ValueError("attempted relative import beyond top-level "
-                              "package")
+                             "package")
     return "%s.%s" % (package[:dot], name)
 
 
@@ -55,20 +55,27 @@ def import_module(name, package=None):
     return sys.modules[name]
 
 if __name__ != '__main__':
-    try:
-        settings_module_name = os.environ['MINIMONGO_SETTINGS_MODULE']
-    except KeyError, e:
-        settings_module_name = 'minimongo.app_config'
+
+    settings_modules = []
 
     try:
-        print "IMPORTING %s" % settings_module_name
-        module = import_module(settings_module_name)
-        MONGODB_HOST = module.MONGODB_HOST
-        MONGODB_PORT = module.MONGODB_PORT
-    except ImportError, e:
-        # Can't import either MINIMONGO_SETTINGS_MODULE, or
-        # minimongo_config, so we just return, knowing that the default
-        # values will be used.
-        traceback.print_exc()
-        print "USING DEFAULTS"
+        settings_modules.append(os.environ['MINIMONGO_SETTINGS_MODULE'])
+    except KeyError, e:
         pass
+
+    # Here are the other 2 places that we try to import configs from:
+    settings_modules.append('minimongo.app_config')
+    settings_modules.append('minimongo_config')
+
+    for module_name in settings_modules:
+        try:
+            module = import_module(module_name)
+            MONGODB_HOST = module.MONGODB_HOST
+            MONGODB_PORT = module.MONGODB_PORT
+            # Once we get a successfull config module import, we break out
+            # of the loop above.
+            break
+        except ImportError, exc:
+            # Error importing this modlue, so we continue
+            pass
+
