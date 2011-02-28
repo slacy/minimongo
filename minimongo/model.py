@@ -173,10 +173,11 @@ class Model(dict):
         return self
 
     def __str__(self):
-        return type(self).__name__ + '(' + str(dict(self)) + ')'
+        return "%s(%s)" % (self.__class__.__name__,
+                           super(Model, self).__str__())
 
     def __unicode__(self):
-        return type(self).__name__ + u'(' + str(dict(self)) + u')'
+        return str(self).decode("utf-8")
 
 
 class Index(object):
