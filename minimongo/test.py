@@ -163,13 +163,22 @@ class TestSimpleModel(unittest.TestCase):
         dummy_m = TestModel()
         dummy_m.l = ['a', 'b', 'c']
         dummy_m.x = 1
+        dummy_m.y = {'m': 'n',
+                     'o': 'p'}
         dummy_m.save()
 
         dummy_n = TestModel.collection.find_one({'x': 1})
 
+        # Make sure the internal lists are equivalent.
         ml = dummy_m.l
         nl = dummy_n.l
+        # There's a bug in pymongo here.  The following assert will fire:
+        # self.assertEqual(type(dummy_m.y), type(dummy_n.y))
+        # with AssertionError: <type 'dict'> != <class '__main__.TestModel'>
+        # because as_class is applied recursively.  Ugh!
+
         self.assertEqual(ml, nl)
+        self.assertEqual(dummy_m, dummy_n)
 
     def test_delete_field(self):
         """Test deleting a single field from an object."""
