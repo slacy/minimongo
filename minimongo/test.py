@@ -287,6 +287,15 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(unicode(TestModel({"foo": u"←"})),
                          u"TestModel({'foo': u'\\u2190'})")
 
+    def test_auto_collection_name(self):
+        try:
+            class SomeModel(Model):
+                mongo = MongoCollection(database='test')
+        except Exception:
+            self.fail("`collection_name` should've been constructed.")
+
+        self.assertEqual(SomeModel.collection.name, "some_model")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,6 +2,8 @@
 
 __all__ = ('Collection', 'Index', 'Model', 'MongoCollection')
 
+import re
+
 import pymongo
 import pymongo.collection
 import pymongo.database
@@ -74,22 +76,27 @@ class Meta(type):
         host = collection_info.host
         port = collection_info.port
         database = collection_info.database
-        collection_name = collection_info.collection
         collection_class = collection_info.collection_class
+        collection_name = collection_info.collection
 
         new_cls = super(Meta, mcs).__new__(mcs, name, bases, attrs)
 
-        # This constructor runs on the Model class as well as the derived
-        # classes.  When we're a Model, we don't have a proper
+        # This constructor runs on the Model class as well as the
+        # derived classes. When we're a Model, we don't have a proper
         # configuration, so we just skip the connection stuff below.
         if collection_info.placeholder:
             new_cls.database = None
             new_cls.collection = None
             return new_cls
-        elif not (host and port and database and collection_name):
+        elif not (host and port and database):
             raise Exception(
-                'minimongo Model %s %s improperly configured: %s %s %s %s' % (
-                    mcs, name, host, port, database, collection_name))
+                'minimongo Model %s %s improperly configured: %s %s %s' %
+                (mcs, name, host, port, database))
+
+        # If connection name wasn't given explicitly -- class name is
+        # used instead.
+        if not collection_name:
+            collection_name = to_underscore(name)
 
         hostport = (host, port)
         # Check the connection pool for an existing connection.
@@ -193,3 +200,19 @@ class Index(object):
         """Call pymongo's ensure_index on the given collection with the
         stored args."""
         return collection.ensure_index(*self._args, **self._kwargs)
+
+
+# Utils.
+
+def to_underscore(string):
+    """Converts a given string from CamelCase to under_score.
+
+    >>> to_underscore("Foobar")
+    'foobar'
+    >>> to_underscore("FooBar")
+    'foo_bar'
+    >>> to_underscore("fooBar")
+    'foo_bar'
+    """
+    tmp = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", string)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", tmp).lower()
