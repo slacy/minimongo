@@ -1,6 +1,13 @@
+# -*- coding: utf-8 -*-
+
 import unittest2 as unittest
 from pymongo.errors import DuplicateKeyError
-from minimongo.model import Model, MongoCollection, Index
+from minimongo.model import Collection, Index, Model, MongoCollection
+
+
+class TestCollection(Collection):
+    def custom(self):
+        return "It works!"
 
 
 class TestModel(Model):
@@ -13,6 +20,13 @@ class TestModel(Model):
         self.y = 456
         self.save()
 
+
+class TestModelCollection(Model):
+    """Model class with a custom collection class."""
+    mongo = MongoCollection(database='test', collection='minimongo_test',
+                            collection_class=TestCollection)
+
+
 class TestModelUnique(Model):
     mongo = MongoCollection(database='test', collection='minimongo_unique')
     indices = (Index('x', unique=True),)
@@ -20,6 +34,7 @@ class TestModelUnique(Model):
 
 class TestDerivedModel(TestModel):
     mongo = MongoCollection(database='test', collection='minimongo_derived')
+
 
 
 def assertContains(iterator, instance):
@@ -249,6 +264,13 @@ class TestSimpleModel(unittest.TestCase):
 
         found = TestDerivedModel.collection.find_one({'x': 123})
         self.assertEqual(der, found)
+
+    def test_collection_class(self):
+        model = TestModelCollection()
+
+        self.assertIsInstance(model.collection, TestCollection)
+        self.assertTrue(hasattr(model.collection, 'custom'))
+        self.assertEqual(model.collection.custom(), "It works!")
 
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ class Collection(pymongo.collection.Collection):
 class MongoCollection(object):
     """Container class for connection to db & mongo collection settings."""
     def __init__(self, host=None, port=None, database=None, collection=None,
-                 placeholder=False):
+                 collection_class=None, placeholder=False):
         if placeholder:
             if host or port or database or collection:
                 raise Exception("Placeholder configs can't also specify other params")
@@ -46,10 +46,12 @@ class MongoCollection(object):
             host = config.MONGODB_HOST
         if not port:
             port = config.MONGODB_PORT
+
         self.host = host
         self.port = port
         self.database = database
         self.collection = collection
+        self.collection_class = collection_class or Collection
         self.placeholder = placeholder
 
 
@@ -60,20 +62,19 @@ class Meta(type):
     # A very rudimentary connection pool:
     _connections = {}
 
-    def __new__(mcs, name, bases, data):
+    def __new__(mcs, name, bases, attrs):
         # Pull fields out of the MongoCollection object to get the database
         # connection parameters, etc.
-        collection_info = data['mongo']
-        if 'indices' in data:
-            index_info = data['indices']
-        else:
-            index_info = []
+        collection_info = attrs['mongo']
+        index_info = attrs.get('indices', [])
+
         host = collection_info.host
         port = collection_info.port
-        dbname = collection_info.database
-        collname = collection_info.collection
+        database = collection_info.database
+        collection_name = collection_info.collection
+        collection_class = collection_info.collection_class
 
-        new_cls = super(Meta, mcs).__new__(mcs, name, bases, data)
+        new_cls = super(Meta, mcs).__new__(mcs, name, bases, attrs)
 
         # This constructor runs on the Model class as well as the derived
         # classes.  When we're a Model, we don't have a proper
@@ -82,12 +83,10 @@ class Meta(type):
             new_cls.database = None
             new_cls.collection = None
             return new_cls
-
-        if (not collection_info.placeholder
-            and not (host and port and dbname and collname)):
+        elif not (host and port and database and collection_name):
             raise Exception(
                 'minimongo Model %s %s improperly configured: %s %s %s %s' % (
-                    mcs, name, host, port, dbname, collname))
+                    mcs, name, host, port, database, collection_name))
 
         hostport = (host, port)
         # Check the connection pool for an existing connection.
@@ -96,10 +95,10 @@ class Meta(type):
         else:
             connection = pymongo.Connection(host, port)
         mcs._connections[hostport] = connection
-        new_cls.database = connection[dbname]
-        new_cls.collection = Collection(new_cls.database,
-                                        collname,
-                                        document_class=new_cls)
+        new_cls.database = connection[database]
+        new_cls.collection = collection_class(new_cls.database,
+                                              collection_name,
+                                              document_class=new_cls)
         new_cls._index_info = index_info
 
         # Generate all our indices automatically when the class is
