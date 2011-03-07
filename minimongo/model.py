@@ -1,4 +1,3 @@
-#!/bin/python
 import pymongo
 import pymongo.collection
 import pymongo.database
@@ -15,7 +14,7 @@ class Collection(pymongo.collection.Collection):
                  create=False, **kwargs):
         self._document_class = kwargs['document_class']
         del kwargs['document_class']
-        return super(Collection, self).__init__(
+        super(Collection, self).__init__(
             database, name, options, create, **kwargs)
 
     def find(self, *args, **kwargs):
@@ -41,7 +40,8 @@ class MongoCollection(object):
                  placeholder=False):
         if placeholder:
             if host or port or database or collection:
-                raise Exception("Placeholder configs can't also specify other params")
+                raise Exception(
+                    "Placeholder configs can't also specify other params")
         if not host:
             host = config.MONGODB_HOST
         if not port:
