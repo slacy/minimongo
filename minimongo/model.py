@@ -1,8 +1,7 @@
-import pymongo
 import pymongo.collection
-import pymongo.database
 import pymongo.dbref
 import pymongo.objectid
+
 from minimongo import config
 
 

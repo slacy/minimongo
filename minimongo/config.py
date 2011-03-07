@@ -8,8 +8,9 @@ Uses the following 3 strategies:
 2. import 'minimongo.app_config'
 3. default values (localhost, 27017)
 """
-import sys
 import os
+import sys
+
 
 # Default values for MONGODB_HOST and MONGODB_PORT if no custom config
 # module is specified, or if we're unable to 'from minimongo.app_config import
