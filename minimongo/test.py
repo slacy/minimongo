@@ -272,6 +272,21 @@ class TestSimpleModel(unittest.TestCase):
         self.assertTrue(hasattr(model.collection, 'custom'))
         self.assertEqual(model.collection.custom(), "It works!")
 
+    def test_str_and_unicode(self):
+        self.assertEqual(str(TestModel()), "TestModel({})")
+        self.assertEqual(str(TestModel({"foo": "bar"})),
+                         "TestModel({'foo': 'bar'})")
+
+        self.assertEqual(unicode(TestModel({"foo": "bar"})),
+                         u"TestModel({'foo': 'bar'})")
+
+        # __unicode__() doesn't decode any bytestring values to unicode,
+        # leaving it up to the user.
+        self.assertEqual(unicode(TestModel({"foo": "←"})),
+                         u"TestModel({'foo': '\\xe2\\x86\\x90'})")
+        self.assertEqual(unicode(TestModel({"foo": u"←"})),
+                         u"TestModel({'foo': u'\\u2190'})")
+
 
 if __name__ == '__main__':
     unittest.main()
