@@ -1,4 +1,7 @@
-#!/bin/python
+# -*- coding: utf-8 -*-
+
+__all__ = ('Collection', 'Index', 'Model', 'MongoCollection')
+
 import pymongo
 import pymongo.collection
 import pymongo.database

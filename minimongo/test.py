@@ -2,7 +2,7 @@
 
 import unittest2 as unittest
 from pymongo.errors import DuplicateKeyError
-from minimongo.model import Collection, Index, Model, MongoCollection
+from minimongo import Collection, Index, Model, MongoCollection
 
 
 class TestCollection(Collection):
