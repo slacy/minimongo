@@ -93,7 +93,7 @@ class Meta(type):
                 'minimongo Model %s %s improperly configured: %s %s %s' %
                 (mcs, name, host, port, database))
 
-        # If connection name wasn't given explicitly -- class name is
+        # If collection name wasn't given explicitly -- class name is
         # used instead.
         if not collection_name:
             collection_name = to_underscore(name)
@@ -214,5 +214,4 @@ def to_underscore(string):
     >>> to_underscore("fooBar")
     'foo_bar'
     """
-    tmp = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", string)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", tmp).lower()
+    return re.sub("(.)([A-Z][a-z]+)", r"\1_\2", string).lower()
