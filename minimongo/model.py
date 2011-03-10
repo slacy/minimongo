@@ -46,7 +46,14 @@ class Collection(PyMongoCollection):
 
     def from_dbref(self, dbref):
         """Given a DBRef, return an instance of this type."""
-        return self.find_one(dbref.id)
+        # Making sure a given DBRef points to a proper collection
+        # and database.
+        if not dbref.collection == self.name:
+            raise ValueError("DBRef points to an invalid collection.")
+        elif dbref.database and not dbref.database == self.database.name:
+            raise ValueError("DBRef points to an invalid database.")
+        else:
+            return self.find_one(dbref.id)
 
 
 class Options(object):

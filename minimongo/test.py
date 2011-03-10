@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import with_statement
+
 import unittest2 as unittest
+from pymongo.dbref import DBRef
 from pymongo.errors import DuplicateKeyError
 
 from minimongo import Collection, Index, Model
@@ -285,6 +288,17 @@ class TestSimpleModel(unittest.TestCase):
 
         dummy_b = TestModel.collection.from_dbref(ref_a)
         self.assertEqual(dummy_a, dummy_b)
+
+        # Making sure, that a ValueError is raised for DBRefs from a
+        # "foreign" collection or database.
+        with self.assertRaises(ValueError):
+            ref_a = DBRef("foo", ref_a.id)
+            TestModel.collection.from_dbref(ref_a)
+
+        with self.assertRaises(ValueError):
+            ref_a = DBRef(ref_a.collection, ref_a.id, "foo")
+            TestModel.collection.from_dbref(ref_a)
+
 
     def test_db_and_collection_names(self):
         """Test the methods that return the current class's DB and
