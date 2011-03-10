@@ -3,7 +3,7 @@
 import unittest2 as unittest
 from pymongo.errors import DuplicateKeyError
 
-from minimongo import Collection, Index, Model, MongoCollection
+from minimongo import Collection, Index, Model
 from minimongo.model import to_underscore
 
 
@@ -14,8 +14,12 @@ class TestCollection(Collection):
 
 class TestModel(Model):
     """Model class for test cases."""
-    mongo = MongoCollection(database='test', collection='minimongo_test')
-    indices = (Index('x'),)
+    class Meta:
+        database = "test"
+        collection = "minimongo_test"
+        indices = (
+            Index('x'),
+        )
 
     def a_method(self):
         self.x = 123
@@ -25,18 +29,25 @@ class TestModel(Model):
 
 class TestModelCollection(Model):
     """Model class with a custom collection class."""
-    mongo = MongoCollection(database='test', collection='minimongo_test',
-                            collection_class=TestCollection)
+    class Meta:
+        database = "test"
+        collection = "minimongo_test"
+        collection_class = TestCollection
 
 
 class TestModelUnique(Model):
-    mongo = MongoCollection(database='test', collection='minimongo_unique')
-    indices = (Index('x', unique=True),)
+    class Meta:
+        database = "test"
+        collection = "minimongo_unique"
+        indices = (
+            Index('x', unique=True),
+        )
 
 
 class TestDerivedModel(TestModel):
-    mongo = MongoCollection(database='test', collection='minimongo_derived')
-
+    class Meta:
+        database = "test"
+        collection = "minimongo_derived"
 
 
 def assertContains(iterator, instance):
@@ -47,24 +58,34 @@ def assertContains(iterator, instance):
             return True
     return False
 
+
 class TestSimpleModel(unittest.TestCase):
     """Main test case."""
     def setUp(self):
         """unittest setup, drop all collections, and rebuild indices before
         starting each test."""
-        TestModel.collection.drop()
         TestModel.auto_index()
-
-        TestModelUnique.collection.drop()
         TestModelUnique.auto_index()
-
-        TestDerivedModel.collection.drop()
 
     def tearDown(self):
         """unittest teardown, drop all collections."""
-        # TestModel.collection.drop()
-        # TestModelUnique.collection.drop()
-        # TestDerivedModel.collection.drop()
+        TestModel.collection.drop()
+        TestModelUnique.collection.drop()
+        TestDerivedModel.collection.drop()
+
+    def test_meta(self):
+        self.assertTrue(hasattr(TestModel, "_meta"))
+        self.assertFalse(hasattr(TestModel, "Meta"))
+
+        meta = TestModel._meta
+
+        for attr in ("host", "port", "indices", "database",
+                     "collection", "collection_class"):
+            self.assertTrue(hasattr(meta, attr))
+
+        self.assertEqual(meta.database, "test")
+        self.assertEqual(meta.collection, "minimongo_test")
+        self.assertEqual(meta.indices, (Index('x'), ))
 
     def test_dictyness(self):
         item = TestModel({'x': 642})
@@ -292,7 +313,8 @@ class TestSimpleModel(unittest.TestCase):
     def test_auto_collection_name(self):
         try:
             class SomeModel(Model):
-                mongo = MongoCollection(database='test')
+                class Meta:
+                    database = "test"
         except Exception:
             self.fail("`collection_name` should've been constructed.")
 

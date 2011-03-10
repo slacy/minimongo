@@ -2,4 +2,4 @@
 
 __all__ = ('Collection', 'Index', 'Model', 'MongoCollection')
 
-from .model import Collection, Index, Model, MongoCollection
+from .model import Collection, Index, Model
