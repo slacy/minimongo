@@ -2,7 +2,9 @@
 
 import unittest2 as unittest
 from pymongo.errors import DuplicateKeyError
+
 from minimongo import Collection, Index, Model, MongoCollection
+from minimongo.model import to_underscore
 
 
 class TestCollection(Collection):
@@ -295,6 +297,14 @@ class TestSimpleModel(unittest.TestCase):
             self.fail("`collection_name` should've been constructed.")
 
         self.assertEqual(SomeModel.collection.name, "some_model")
+
+
+class TestUtils(unittest.TestCase):
+    def test_to_underscore(self):
+        self.assertEqual(to_underscore("Foobar"), "foobar")
+        self.assertEqual(to_underscore("fooBar"), "foo_bar")
+        self.assertEqual(to_underscore("FooBar42"), "foo_bar42")
+        self.assertEqual(to_underscore("Foo42Bar"), "foo42_bar")
 
 
 if __name__ == '__main__':

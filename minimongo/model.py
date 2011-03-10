@@ -207,11 +207,7 @@ class Index(object):
 def to_underscore(string):
     """Converts a given string from CamelCase to under_score.
 
-    >>> to_underscore("Foobar")
-    'foobar'
     >>> to_underscore("FooBar")
-    'foo_bar'
-    >>> to_underscore("fooBar")
     'foo_bar'
     """
     return re.sub("(.)([A-Z][a-z]+)", r"\1_\2", string).lower()
