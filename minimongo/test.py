@@ -105,7 +105,6 @@ class TestSimpleModel(unittest.TestCase):
         del item.y
         self.assertEqual(item, {'z': 3})
 
-
     def test_creation(self):
         """Test simple object creation and querying via find_one."""
         dummy_m = TestModel({'x': 1, 'y': 1})
@@ -123,6 +122,25 @@ class TestSimpleModel(unittest.TestCase):
         # no extra fields, etc.)
         self.assertEqual(dummy_m, {'x': 1, 'y': 1, 'z': 1, '_id': dummy_m._id})
         self.assertEqual(dummy_n, {'x': 1, 'y': 1, 'z': 1, '_id': dummy_n._id})
+
+    def test_find_one(self):
+        model = TestModel({'x': 1, 'y': 1})
+        model.save()
+
+        self.assertIsNotNone(model._id)
+
+        # Making sure we find_one accepts strings as well as ObjectIds.
+
+        # a) ObjectId
+        found = TestModel.collection.find_one(model._id)
+        self.assertIsNotNone(found)
+        self.assertIsInstance(found, TestModel)
+        self.assertEqual(found, model)
+        # b) str
+        found = TestModel.collection.find_one("%s" % model._id)
+        self.assertIsNotNone(found)
+        self.assertIsInstance(found, TestModel)
+        self.assertEqual(found, model)
 
     def test_index_existance(self):
         """Test that indexes were created properly."""

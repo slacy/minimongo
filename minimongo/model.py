@@ -7,6 +7,7 @@ import re
 from pymongo import Connection
 from pymongo.collection import Collection as PyMongoCollection
 from pymongo.dbref import DBRef
+from pymongo.errors import InvalidId
 from pymongo.objectid import ObjectId
 
 from minimongo import config
@@ -17,27 +18,35 @@ class Collection(PyMongoCollection):
     functionality, but stores the document class of the Collection we're
     working with, so that find and find_one can return the right classes."""
 
-    def __init__(self, database, name, options=None, create=False, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._document_class = kwargs.pop("document_class")
-
-        super(Collection,
-              self).__init__(database, name, options, create, **kwargs)
+        super(Collection, self).__init__(*args, **kwargs)
 
     def find(self, *args, **kwargs):
         """same as pymongo.Collection.find except it returns the right
         document type."""
-        kwargs['as_class'] = self._document_class
+        kwargs["as_class"] = self._document_class
         return super(Collection, self).find(*args, **kwargs)
 
-    def find_one(self, *args, **kwargs):
+    def find_one(self, spec_or_id, *args, **kwargs):
         """same as pymongo.Collection.find_one except it returns the right
         document type"""
-        kwargs['as_class'] = self._document_class
-        return super(Collection, self).find_one(*args, **kwargs)
+        kwargs["as_class"] = self._document_class
+
+        # The problem with default find_one() method is that, it fails
+        # to fetch a document, if a given id is a string. So, we try to
+        # convert `spec_or_id` to ObjectId and fail silently on exception.
+        if isinstance(spec_or_id, basestring):
+            try:
+                spec_or_id = ObjectId(spec_or_id)
+            except InvalidId:
+                pass
+
+        return super(Collection, self).find_one(spec_or_id, *args, **kwargs)
 
     def from_dbref(self, dbref):
         """Given a DBRef, return an instance of this type."""
-        return self.find_one({'_id': dbref.id})
+        return self.find_one(dbref.id)
 
 
 class Options(object):
