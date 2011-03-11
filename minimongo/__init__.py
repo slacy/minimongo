@@ -136,7 +136,11 @@ class Options(object):
 
 
 class ModelBase(type):
-    """Metaclass for all models."""
+    """Metaclass for all models.
+
+    .. todo:: add Meta inheritance -- so that missing attributes are
+              populated from the parrent's Meta if any.
+    """
 
     # A very rudimentary connection pool.
     _connections = {}
