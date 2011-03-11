@@ -169,17 +169,21 @@ class Model(dict):
         except KeyError as excn:
             raise AttributeError(excn)
 
-    def dbref(self):
-        """Returns a DBRef for the current object."""
+    def dbref(self, with_database=True):
+        """Returns a DBRef for the current object.
+
+        If with_database is False, the resulting DBRef won't have a
+        ``database`` field.
+        """
         if not hasattr(self, '_id'):
             self._id = ObjectId()
         elif self._id is None:
             # FIXME: is this really an issue?
             raise ValueError("ObjectId must be valid to create a DBRef.")
 
-        return DBRef(collection=self._meta.collection,
-                     database=self._meta.database,
-                     id=self._id)
+        return DBRef(self._meta.collection, self._id,
+                     database=self._meta.database if with_database else None)
+
 
     def remove(self):
         """Delete this object."""

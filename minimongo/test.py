@@ -308,6 +308,15 @@ class TestSimpleModel(unittest.TestCase):
             ref_a = DBRef(ref_a.collection, ref_a.id, "foo")
             TestModel.collection.from_dbref(ref_a)
 
+        # Testing ``with_database`` option.
+        ref_a = dummy_a.dbref(with_database=False)
+        self.assertIsNone(ref_a.database)
+
+        ref_a = dummy_a.dbref(with_database=True)
+        self.assertIsNotNone(ref_a.database)
+
+        ref_a = dummy_a.dbref()  # True by default.
+        self.assertIsNotNone(ref_a.database)
 
     def test_db_and_collection_names(self):
         """Test the methods that return the current class's DB and
