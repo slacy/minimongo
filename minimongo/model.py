@@ -10,8 +10,6 @@ from pymongo.dbref import DBRef
 from pymongo.errors import InvalidId
 from pymongo.objectid import ObjectId
 
-from minimongo import config
-
 
 class Collection(PyMongoCollection):
     """A Wrapper around pymongo.Collection that provides the same
@@ -58,15 +56,21 @@ class Collection(PyMongoCollection):
 
 class Options(object):
     """Container class for model metadata."""
-    def __init__(self, meta):
-        self.host = config.MONGODB_HOST
-        self.port = config.MONGODB_PORT
-        self.indices = ()
-        self.database = None
-        self.collection = None
-        self.collection_class = Collection
+    host = None
+    port = None
+    indices = ()
+    database = None
+    collection = None
+    collection_class = Collection
 
+    def __init__(self, meta):
         self.__dict__.update(meta.__dict__)
+
+    @classmethod
+    def configure(cls, **defaults):
+        """Updates class-level defaults for Options container."""
+        for attr, value in defaults.iteritems():
+            setattr(cls, attr, value)
 
 
 class ModelBase(type):

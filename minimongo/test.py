@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import with_statement
+from types import ModuleType
 
 import unittest2 as unittest
 from pymongo.dbref import DBRef
 from pymongo.errors import DuplicateKeyError
 
-from minimongo import Collection, Index, Model
+from minimongo import Collection, Index, Model, Options, configure
 from minimongo.model import to_underscore
 
 
@@ -18,6 +19,8 @@ class TestCollection(Collection):
 class TestModel(Model):
     """Model class for test cases."""
     class Meta:
+        host = "localhost"
+        port = 27017
         database = "test"
         collection = "minimongo_test"
         indices = (
@@ -33,6 +36,8 @@ class TestModel(Model):
 class TestModelCollection(Model):
     """Model class with a custom collection class."""
     class Meta:
+        host = "localhost"
+        port = 27017
         database = "test"
         collection = "minimongo_test"
         collection_class = TestCollection
@@ -40,6 +45,8 @@ class TestModelCollection(Model):
 
 class TestModelUnique(Model):
     class Meta:
+        host = "localhost"
+        port = 27017
         database = "test"
         collection = "minimongo_unique"
         indices = (
@@ -49,6 +56,8 @@ class TestModelUnique(Model):
 
 class TestDerivedModel(TestModel):
     class Meta:
+        host = "localhost"
+        port = 27017
         database = "test"
         collection = "minimongo_derived"
 
@@ -346,6 +355,8 @@ class TestSimpleModel(unittest.TestCase):
         try:
             class SomeModel(Model):
                 class Meta:
+                    host = "localhost"
+                    port = 27017
                     database = "test"
         except Exception:
             self.fail("`collection_name` should've been constructed.")
@@ -359,6 +370,56 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(to_underscore("fooBar"), "foo_bar")
         self.assertEqual(to_underscore("FooBar42"), "foo_bar42")
         self.assertEqual(to_underscore("Foo42Bar"), "foo42_bar")
+
+    def test_configure(self):
+        # a) keyword arguments
+        self.assertFalse(hasattr(Options, "foo"))
+        configure(foo="bar")
+        self.assertTrue(hasattr(Options, "foo"))
+        del Options.foo
+
+        # b) module
+        self.assertFalse(hasattr(Options, "foo"))
+        module = ModuleType("config")
+        module.MONGODB_FOO = "bar"
+        module.NON_MONGO_ATTR = "bar"
+        configure(foo="bar")
+        self.assertFalse(hasattr(Options, "NON_MONGO_ATTR"))
+        self.assertFalse(hasattr(Options, "MONGODB_FOO"))
+        self.assertTrue(hasattr(Options, "foo"))
+        del Options.foo
+
+        # c) non-module (fails silently)
+        try:
+            configure(42)
+            configure(None)
+            configure("foobar")
+        except Exception:
+            self.fail("configure() should fail silently on invalid input.")
+
+
+class TestOptions(unittest.TestCase):
+    def test_init(self):
+        class Meta:
+            foo = "bar"
+
+        options = Options(Meta)
+        self.assertEqual(options.foo, "bar")
+
+    def test_configure(self):
+        # Options have no defaults yet -- configure() was never called.
+        with self.assertRaises(AttributeError):
+            Options.foo
+
+        Options.configure(foo="bar")
+
+        try:
+            self.assertEquals(Options.foo, "bar")
+        except AttributeError:
+            self.fail("Options.foo should've been set.")
+
+        del Options.foo
+
 
 
 if __name__ == '__main__':
