@@ -125,7 +125,8 @@ class Options(object):
     collection_class = Collection
 
     def __init__(self, meta):
-        self.__dict__.update(meta.__dict__)
+        if meta is not None:
+            self.__dict__.update(meta.__dict__)
 
     @classmethod
     def configure(cls, **defaults):
@@ -145,16 +146,16 @@ class ModelBase(type):
                           mcs).__new__(mcs, name, bases, attrs)
         parents = [b for b in bases if isinstance(b, ModelBase)]
         if not parents:
-            # If this isn"t a subclass of Model, don"t do anything special.
+            # If this isn't a subclass of Model, don't do anything special.
             return new_class
 
         # Processing Model metadata.
         try:
             meta = getattr(new_class, "Meta")
         except AttributeError:
-            raise TypeError("Model %r is missing Meta declaration." % name)
+            meta = None
         else:
-            delattr(new_class, "Meta")  # Won"t need the original metadata
+            delattr(new_class, "Meta")  # Won't need the original metadata
                                         # container anymore.
 
         options = Options(meta)
@@ -229,7 +230,7 @@ class Model(dict):
     # These lines make this object behave both like a dict (x["y"]) and like
     # an object (x.y).  We have to translate from KeyError to AttributeError
     # since model.undefined raises a KeyError and model["undefined"] raises
-    # a KeyError.  we don"t ever want __getattr__ to raise a KeyError, so we
+    # a KeyError.  we don't ever want __getattr__ to raise a KeyError, so we
     # "translate" them below:
     def __getattr__(self, attr):
         try:

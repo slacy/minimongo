@@ -364,6 +364,18 @@ class TestSimpleModel(unittest.TestCase):
 
         self.assertEqual(SomeModel.collection.name, "some_model")
 
+    def test_nometa(self):
+        configure(database="test")
+
+        try:
+            class SomeModel(Model):
+                pass
+        except Exception as e:
+            print e
+            self.fail("A model with no Meta is perfectly fine :)")
+
+        del Options.database
+
 
 class TestUtils(unittest.TestCase):
     def test_to_underscore(self):
