@@ -164,7 +164,6 @@ class TestSimpleModel(unittest.TestCase):
         self.assertEqual(indices['x_1'],
                          {'key': [('x', 1)]})
 
-
     def test_unique_index(self):
         """Test behavior of indices with unique=True"""
         # This will work (y is undefined)
@@ -391,9 +390,7 @@ class TestNoAutoIndex(unittest.TestCase):
 
     def tearDown(self):
         """unittest teardown, drop all collections."""
-        TestModel.collection.drop()
-        TestModelUnique.collection.drop()
-        TestDerivedModel.collection.drop()
+        TestNoAutoIndexModel.collection.drop()
 
     def test_no_auto_index(self):
         TestNoAutoIndexModel({'x': 1}).save()
@@ -460,7 +457,6 @@ class TestOptions(unittest.TestCase):
             self.fail("Options.foo should've been set.")
 
         del Options.foo
-
 
 
 if __name__ == '__main__':
