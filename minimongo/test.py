@@ -56,6 +56,16 @@ class TestDerivedModel(TestModel):
         collection = "minimongo_derived"
 
 
+class TestNoAutoIndexModel(Model):
+    class Meta:
+        database = "test"
+        collection = "minimongo_test"
+        indices = (
+            Index('x'),
+        )
+        auto_index = False
+
+
 def assertContains(iterator, instance):
     """Given an iterable of Models, make sure that the instance (of a Model)
     is inside the iterable."""
@@ -375,6 +385,24 @@ class TestSimpleModel(unittest.TestCase):
             self.fail("A model with no Meta is perfectly fine :)")
 
         del Options.database
+
+
+class TestNoAutoIndex(unittest.TestCase):
+
+    def tearDown(self):
+        """unittest teardown, drop all collections."""
+        TestModel.collection.drop()
+        TestModelUnique.collection.drop()
+        TestDerivedModel.collection.drop()
+
+    def test_no_auto_index(self):
+        TestNoAutoIndexModel({'x': 1}).save()
+        self.assertEqual({u'_id_': {u'key': [(u'_id', 1)]}},
+                         TestNoAutoIndexModel.collection.index_information())
+        TestNoAutoIndexModel.auto_index()
+        self.assertEqual({u'_id_': {u'key': [(u'_id', 1)]},
+                          u'x_1': {u'key': [(u'x', 1)]}},
+                         TestNoAutoIndexModel.collection.index_information())
 
 
 class TestUtils(unittest.TestCase):

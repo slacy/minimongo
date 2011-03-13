@@ -122,6 +122,7 @@ class Options(object):
     indices = ()
     database = None
     collection = None
+    auto_index = True
     collection_class = Collection
 
     def __init__(self, meta):
@@ -176,14 +177,16 @@ class ModelBase(type):
         if hostport in mcs._connections:
             connection = mcs._connections[hostport]
         else:
-            connection = mcs._connections[hostport] = Connection(*hostport)
+            connection = Connection(*hostport, _connect=False)
+            mcs._connections[hostport] = connection
 
         new_class._meta = options
         new_class.database = connection[options.database]
         new_class.collection = options.collection_class(
             new_class.database, options.collection, document_class=new_class)
 
-        new_class.auto_index()   # Generating required indices.
+        if options.auto_index:
+            new_class.auto_index()   # Generating required indices.
 
         return new_class
 
