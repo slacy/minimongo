@@ -177,6 +177,10 @@ class ModelBase(type):
         if hostport in mcs._connections:
             connection = mcs._connections[hostport]
         else:
+            # _connect=False option
+            # creates :class:`pymongo.connection.Connection` object without
+            # establishing connection. It's required if there is no running
+            # mongodb at this time but we want to create :class:`Model`.
             connection = Connection(*hostport, _connect=False)
             mcs._connections[hostport] = connection
 
