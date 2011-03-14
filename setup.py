@@ -11,8 +11,21 @@ except ImportError:
 
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, "README.rst")).read()
-CHANGES = open(os.path.join(here, "CHANGES.txt")).read()
+
+DESCRIPTION = "Minimal database Model management for MongoDB"
+
+try:
+    LONG_DESCRIPTION = open(os.path.join(here, "README.rst")).read()
+except IOError:
+    pass
+
+
+CLASSIFIERS = (
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Topic :: Database",
+)
 
 
 class PyTest(Command):
@@ -29,26 +42,21 @@ class PyTest(Command):
 
 requires = ["pymongo"]
 
-setup(
-    name="minimongo",
-    version="0.2.5",
-    packages=find_packages(),
-    cmdclass={"test": PyTest},
+setup(name="minimongo",
+      version="0.2.5",
+      packages=find_packages(),
+      cmdclass={"test": PyTest},
+      platforms=["any"],
 
-    install_requires = ["pymongo>=1.9"],
-    zip_safe=False,
-    include_package_data=True,
+      install_requires = ["pymongo>=1.9"],
+      zip_safe=False,
+      include_package_data=True,
 
-    author="Steve Lacy",
-    author_email="slacy@slacy.com",
-    description="Minimal database Model management for MongoDB",
-    long_description=README + "\n\n" + CHANGES,
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "Programming Language :: Python",
-        "Topic :: Database",
-    ],
-    keywords=["mongo", "mongodb", "pymongo", "orm"],
-    url="http://github.com/slacy/minimongo",
+      author="Steve Lacy",
+      author_email="slacy@slacy.com",
+      description=DESCRIPTION,
+      long_description=LONG_DESCRIPTION,
+      classifiers=CLASSIFIERS,
+      keywords=["mongo", "mongodb", "pymongo", "orm"],
+      url="http://github.com/slacy/minimongo",
 )
