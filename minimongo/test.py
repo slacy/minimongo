@@ -37,7 +37,7 @@ class TestModelCollection(Model):
     """Model class with a custom collection class."""
     class Meta:
         database = "test"
-        collection = "minimongo_test"
+        collection = "minimongo_collection"
         collection_class = TestCollection
 
 
@@ -59,7 +59,7 @@ class TestDerivedModel(TestModel):
 class TestNoAutoIndexModel(Model):
     class Meta:
         database = "test"
-        collection = "minimongo_test"
+        collection = "minimongo_noidex"
         indices = (
             Index('x'),
         )
@@ -85,9 +85,12 @@ class TestSimpleModel(unittest.TestCase):
 
     def tearDown(self):
         """unittest teardown, drop all collections."""
-        TestModel.collection.drop()
-        TestModelUnique.collection.drop()
-        TestDerivedModel.collection.drop()
+        map(lambda m: m.collection.drop(),
+            Model.__subclasses__() + [TestDerivedModel])
+
+        for subclass in Model.__subclasses__():
+            subclass.collection.remove()
+            subclass.collection.drop()
 
     def test_meta(self):
         self.assertTrue(hasattr(TestModel, "_meta"))
@@ -379,8 +382,7 @@ class TestSimpleModel(unittest.TestCase):
         try:
             class SomeModel(Model):
                 pass
-        except Exception as e:
-            print e
+        except Exception:
             self.fail("A model with no Meta is perfectly fine :)")
 
         del Options.database
