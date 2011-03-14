@@ -6,7 +6,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
-requires = ['pymongo', 'unittest2']
+requires = ['pymongo']
 
 setup(name='minimongo',
       version='0.2.5',
