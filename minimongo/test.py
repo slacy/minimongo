@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import with_statement
+
+import operator
 from types import ModuleType
 
-import unittest2 as unittest
+import pytest
 from pymongo.dbref import DBRef
 from pymongo.errors import DuplicateKeyError
 
-from minimongo import (
-    Collection, Index, Model, Options,
-    configure, to_underscore
-)
+from minimongo import Collection, Index, Model, Options
+from minimongo import configure, to_underscore
+
 
 
 class TestCollection(Collection):
@@ -24,7 +25,7 @@ class TestModel(Model):
         database = "test"
         collection = "minimongo_test"
         indices = (
-            Index('x'),
+            Index("x"),
         )
 
     def a_method(self):
@@ -46,7 +47,7 @@ class TestModelUnique(Model):
         database = "test"
         collection = "minimongo_unique"
         indices = (
-            Index('x', unique=True),
+            Index("x", unique=True),
         )
 
 
@@ -61,405 +62,399 @@ class TestNoAutoIndexModel(Model):
         database = "test"
         collection = "minimongo_noidex"
         indices = (
-            Index('x'),
+            Index("x"),
         )
         auto_index = False
 
 
-def assertContains(iterator, instance):
-    """Given an iterable of Models, make sure that the instance (of a Model)
-    is inside the iterable."""
-    for i in iterator:
-        if i == instance:
-            return True
-    return False
-
-
-class TestSimpleModel(unittest.TestCase):
-    """Main test case."""
-    def setUp(self):
-        """unittest setup, drop all collections, and rebuild indices before
-        starting each test."""
-        TestModel.auto_index()
-        TestModelUnique.auto_index()
-
-    def tearDown(self):
-        """unittest teardown, drop all collections."""
-        map(lambda m: m.collection.drop(),
-            Model.__subclasses__() + [TestDerivedModel])
-
-        for subclass in Model.__subclasses__():
-            subclass.collection.remove()
-            subclass.collection.drop()
-
-    def test_meta(self):
-        self.assertTrue(hasattr(TestModel, "_meta"))
-        self.assertFalse(hasattr(TestModel, "Meta"))
-
-        meta = TestModel._meta
-
-        for attr in ("host", "port", "indices", "database",
-                     "collection", "collection_class"):
-            self.assertTrue(hasattr(meta, attr))
-
-        self.assertEqual(meta.database, "test")
-        self.assertEqual(meta.collection, "minimongo_test")
-        self.assertEqual(meta.indices, (Index('x'), ))
-
-    def test_dictyness(self):
-        item = TestModel({'x': 642})
-
-        self.assertEqual(item['x'], 642)
-        self.assertEqual(item.x, 642)
-
-        item.y = 426
-        self.assertEqual(item['y'], 426)
-        self.assertEqual(item.y, 426)
-
-        self.assertEqual(sorted(item.keys()), ['x', 'y'])
-
-        del item['x']
-        self.assertEqual(item, {'y': 426})
-        item.z = 3
-        del item.y
-        self.assertEqual(item, {'z': 3})
-
-    def test_creation(self):
-        """Test simple object creation and querying via find_one."""
-        dummy_m = TestModel({'x': 1, 'y': 1})
-        dummy_m.z = 1
-        dummy_m.save()
-
-        dummy_n = TestModel.collection.find_one({'x': 1})
-
-        # Make sure that the find_one method returns the right type.
-        self.assertEqual(type(dummy_n), TestModel)
-        # Make sure that the contents are the same.
-        self.assertEqual(dummy_n, dummy_m)
-
-        # Make sure that our internal representation is what we expect (and
-        # no extra fields, etc.)
-        self.assertEqual(dummy_m, {'x': 1, 'y': 1, 'z': 1, '_id': dummy_m._id})
-        self.assertEqual(dummy_n, {'x': 1, 'y': 1, 'z': 1, '_id': dummy_n._id})
-
-    def test_find_one(self):
-        model = TestModel({'x': 1, 'y': 1})
-        model.save()
-
-        self.assertIsNotNone(model._id)
-
-        # Making sure we find_one accepts strings as well as ObjectIds.
-
-        # a) ObjectId
-        found = TestModel.collection.find_one(model._id)
-        self.assertIsNotNone(found)
-        self.assertIsInstance(found, TestModel)
-        self.assertEqual(found, model)
-        # b) str
-        found = TestModel.collection.find_one("%s" % model._id)
-        self.assertIsNotNone(found)
-        self.assertIsInstance(found, TestModel)
-        self.assertEqual(found, model)
-
-    def test_index_existance(self):
-        """Test that indexes were created properly."""
-        indices = TestModel.collection.index_information()
-        self.assertEqual(indices['x_1'],
-                         {'key': [('x', 1)]})
-
-    def test_unique_index(self):
-        """Test behavior of indices with unique=True"""
-        # This will work (y is undefined)
-        x1_a = TestModelUnique({'x': 1}).save()
-        x1_b = TestModelUnique({'x': 1}).save()
-        # Assert that there's only one object in the collection, even though
-        # we inserted two.  The uniqueness constraint on the index has
-        # dropped one of the inserts (silently, I guess).x
-        self.assertEqual(TestModelUnique.collection.find().count(), 1)
-
-        # Even if we use different values for y, it's still only one object:
-        x2_a = TestModelUnique({'x': 2, 'y': 1}).save()
-        x2_b = TestModelUnique({'x': 2, 'y': 2}).save()
-        # There are now 2 objects, one with x=1, one with x=2.
-        self.assertEqual(TestModelUnique.collection.find().count(), 2)
-
-    def test_unique_constraint(self):
-        x1_a = TestModelUnique({'x': 1, 'y': 1})
-        x1_b = TestModelUnique({'x': 1, 'y': 2})
-        x1_a.save(safe=True)
-        with self.assertRaises(DuplicateKeyError):
-            x1_b.save(safe=True)
-        x1_c = TestModelUnique({'x': 2, 'y': 1})
-        x1_c.save()
-
-    def test_queries(self):
-        """Test some more complex query forms."""
-        dummy_a = TestModel({'x': 1, 'y': 1}).save()
-        dummy_b = TestModel({'x': 1, 'y': 2}).save()
-        dummy_c = TestModel({'x': 2, 'y': 2}).save()
-        dummy_d = TestModel({'x': 2, 'y': 1}).save()
-
-        found_x1 = TestModel.collection.find({'x': 1})
-        found_y1 = TestModel.collection.find({'y': 1})
-        found_x2y2 = TestModel.collection.find({'x': 2, 'y': 2})
-
-        list_x1 = list(found_x1)
-        list_y1 = list(found_y1)
-        list_x2y2 = list(found_x2y2)
-
-        # make sure the types of the things coming back from find() are the
-        # derived Model types, not just a straight dict.
-        self.assertEqual(type(list_x1[0]), TestModel)
-
-        self.assertTrue(assertContains(list_x1, dummy_a))
-        self.assertTrue(assertContains(list_x1, dummy_b))
-        self.assertTrue(assertContains(list_y1, dummy_a))
-        self.assertTrue(assertContains(list_y1, dummy_d))
-        self.assertEqual(list_x2y2[0], dummy_c)
-
-    def test_deletion(self):
-        """Test deleting an object from a collection."""
-        dummy_m = TestModel()
-        dummy_m.x = 100
-        dummy_m.y = 200
-        dummy_m.save()
-
-        dummy_n = TestModel.collection.find({'x': 100})
-        self.assertEqual(dummy_n.count(), 1)
-        for i in dummy_n:
-            i.remove()
-
-        dummy_m = TestModel.collection.find({'x': 100})
-        self.assertEqual(dummy_m.count(), 0)
-
-    def test_complex_types(self):
-        """Test lists as types."""
-        dummy_m = TestModel()
-        dummy_m.l = ['a', 'b', 'c']
-        dummy_m.x = 1
-        dummy_m.y = {'m': 'n',
-                     'o': 'p'}
-        dummy_m.save()
-
-        dummy_n = TestModel.collection.find_one({'x': 1})
-
-        # Make sure the internal lists are equivalent.
-        ml = dummy_m.l
-        nl = dummy_n.l
-        # There's a bug in pymongo here.  The following assert will fire:
-        # self.assertEqual(type(dummy_m.y), type(dummy_n.y))
-        # with AssertionError: <type 'dict'> != <class '__main__.TestModel'>
-        # because as_class is applied recursively.  Ugh!
-
-        self.assertEqual(ml, nl)
-        self.assertEqual(dummy_m, dummy_n)
-
-    def test_delete_field(self):
-        """Test deleting a single field from an object."""
-        dummy_m = TestModel({'x': 1, 'y': 2})
-        dummy_m.save()
-        del(dummy_m.x)
-        dummy_m.save()
-
-        n = TestModel.collection.find_one({'y': 2})
-        self.assertEqual(n, {'y': 2, '_id': dummy_m._id})
-
-    def test_count_and_fetch(self):
-        """Test counting methods on Cursors. """
-        dummy_d = TestModel({'x': 1, 'y': 4}).save()
-        dummy_b = TestModel({'x': 1, 'y': 2}).save()
-        dummy_a = TestModel({'x': 1, 'y': 1}).save()
-        dummy_c = TestModel({'x': 1, 'y': 3}).save()
-
-        find_x1 = TestModel.collection.find({'x': 1}).sort('y')
-        self.assertEqual(find_x1.count(), 4)
-        list_x1 = list(find_x1)
-        self.assertEqual(list_x1[0], dummy_a)
-        self.assertEqual(list_x1[1], dummy_b)
-        self.assertEqual(list_x1[2], dummy_c)
-        self.assertEqual(list_x1[3], dummy_d)
-
-    def test_fetch_and_limit(self):
-        """Test counting methods on Cursors. """
-        dummy_d = TestModel({'x': 1, 'y': 4}).save()
-        dummy_b = TestModel({'x': 1, 'y': 2}).save()
-        dummy_a = TestModel({'x': 1, 'y': 1}).save()
-        dummy_c = TestModel({'x': 1, 'y': 3}).save()
-
-        find_x1 = TestModel.collection.find({'x': 1}).limit(2).sort('y')
-        # Huh, calling count() on a find() with a limit() returns the total
-        # number of elements matched.  Maybe I'm calling it wrong?
-        # self.assertEqual(find_x1.count(), 2)
-        list_x1 = list(find_x1)
-        self.assertEqual(len(list_x1), 2)
-        self.assertEqual(list_x1[0], dummy_a)
-        self.assertEqual(list_x1[1], dummy_b)
-
-    def test_dbref(self):
-        """Test generation of DBRef objects, and querying via DBRef
-        objects."""
-        dummy_a = TestModel({'x': 1, 'y': 999}).save()
-        ref_a = dummy_a.dbref()
-
-        dummy_b = TestModel.collection.from_dbref(ref_a)
-        self.assertEqual(dummy_a, dummy_b)
-
-        # Making sure, that a ValueError is raised for DBRefs from a
-        # "foreign" collection or database.
-        with self.assertRaises(ValueError):
-            ref_a = DBRef("foo", ref_a.id)
-            TestModel.collection.from_dbref(ref_a)
-
-        with self.assertRaises(ValueError):
-            ref_a = DBRef(ref_a.collection, ref_a.id, "foo")
-            TestModel.collection.from_dbref(ref_a)
-
-        # Testing ``with_database`` option.
-        ref_a = dummy_a.dbref(with_database=False)
-        self.assertIsNone(ref_a.database)
-
-        ref_a = dummy_a.dbref(with_database=True)
-        self.assertIsNotNone(ref_a.database)
-
-        ref_a = dummy_a.dbref()  # True by default.
-        self.assertIsNotNone(ref_a.database)
-
-    def test_db_and_collection_names(self):
-        """Test the methods that return the current class's DB and
-        Collection names."""
-        dummy_a = TestModel({'x': 1})
-        self.assertEqual(dummy_a.database.name, 'test')
-        self.assertEqual(TestModel.database.name, 'test')
-        self.assertEqual(dummy_a.collection.name, 'minimongo_test')
-        self.assertEqual(TestModel.collection.name, 'minimongo_test')
-
-    def test_derived(self):
-        """Test Models that are derived from other models."""
-        der = TestDerivedModel()
-        der.a_method()
-
-        self.assertEqual(der.database.name, 'test')
-        self.assertEqual(der.collection.name, 'minimongo_derived')
-
-        found = TestDerivedModel.collection.find_one({'x': 123})
-        self.assertEqual(der, found)
-
-    def test_collection_class(self):
-        model = TestModelCollection()
-
-        self.assertIsInstance(model.collection, TestCollection)
-        self.assertTrue(hasattr(model.collection, 'custom'))
-        self.assertEqual(model.collection.custom(), "It works!")
-
-    def test_str_and_unicode(self):
-        self.assertEqual(str(TestModel()), "TestModel({})")
-        self.assertEqual(str(TestModel({"foo": "bar"})),
-                         "TestModel({'foo': 'bar'})")
-
-        self.assertEqual(unicode(TestModel({"foo": "bar"})),
-                         u"TestModel({'foo': 'bar'})")
-
-        # __unicode__() doesn't decode any bytestring values to unicode,
-        # leaving it up to the user.
-        self.assertEqual(unicode(TestModel({"foo": "←"})),
-                         u"TestModel({'foo': '\\xe2\\x86\\x90'})")
-        self.assertEqual(unicode(TestModel({"foo": u"←"})),
-                         u"TestModel({'foo': u'\\u2190'})")
-
-    def test_auto_collection_name(self):
-        try:
-            class SomeModel(Model):
-                class Meta:
-                    database = "test"
-        except Exception:
-            self.fail("`collection_name` should've been constructed.")
-
-        self.assertEqual(SomeModel.collection.name, "some_model")
-
-    def test_nometa(self):
-        configure(database="test")
-
-        try:
-            class SomeModel(Model):
-                pass
-        except Exception:
-            self.fail("A model with no Meta is perfectly fine :)")
-
-        del Options.database
-
-
-class TestNoAutoIndex(unittest.TestCase):
-
-    def tearDown(self):
-        """unittest teardown, drop all collections."""
-        TestNoAutoIndexModel.collection.drop()
-
-    def test_no_auto_index(self):
-        TestNoAutoIndexModel({'x': 1}).save()
-        self.assertEqual({u'_id_': {u'key': [(u'_id', 1)]}},
-                         TestNoAutoIndexModel.collection.index_information())
-        TestNoAutoIndexModel.auto_index()
-        self.assertEqual({u'_id_': {u'key': [(u'_id', 1)]},
-                          u'x_1': {u'key': [(u'x', 1)]}},
-                         TestNoAutoIndexModel.collection.index_information())
-
-
-class TestUtils(unittest.TestCase):
-    def test_to_underscore(self):
-        self.assertEqual(to_underscore("Foobar"), "foobar")
-        self.assertEqual(to_underscore("fooBar"), "foo_bar")
-        self.assertEqual(to_underscore("FooBar42"), "foo_bar42")
-        self.assertEqual(to_underscore("Foo42Bar"), "foo42_bar")
-
-    def test_configure(self):
-        # a) keyword arguments
-        self.assertFalse(hasattr(Options, "foo"))
-        configure(foo="bar")
-        self.assertTrue(hasattr(Options, "foo"))
-        del Options.foo
-
-        # b) module
-        self.assertFalse(hasattr(Options, "foo"))
-        module = ModuleType("config")
-        module.MONGODB_FOO = "bar"
-        module.NON_MONGO_ATTR = "bar"
-        configure(foo="bar")
-        self.assertFalse(hasattr(Options, "NON_MONGO_ATTR"))
-        self.assertFalse(hasattr(Options, "MONGODB_FOO"))
-        self.assertTrue(hasattr(Options, "foo"))
-        del Options.foo
-
-        # c) non-module (fails silently)
-        try:
-            configure(42)
-            configure(None)
-            configure("foobar")
-        except Exception:
-            self.fail("configure() should fail silently on invalid input.")
-
-
-class TestOptions(unittest.TestCase):
-    def test_init(self):
-        class Meta:
-            foo = "bar"
-
-        options = Options(Meta)
-        self.assertEqual(options.foo, "bar")
-
-    def test_configure(self):
-        # Options have no defaults yet -- configure() was never called.
-        with self.assertRaises(AttributeError):
-            Options.foo
-
-        Options.configure(foo="bar")
-
-        try:
-            self.assertEquals(Options.foo, "bar")
-        except AttributeError:
-            self.fail("Options.foo should've been set.")
-
-        del Options.foo
-
-
-if __name__ == '__main__':
-    unittest.main()
+def setup():
+    TestModel.auto_index()
+    TestModelUnique.auto_index()
+
+
+def teardown():
+    map(lambda m: m.collection.drop(),
+        Model.__subclasses__() + [TestDerivedModel])
+
+
+def test_meta():
+    assert hasattr(TestModel, "_meta")
+    assert not hasattr(TestModel, "Meta")
+
+    meta = TestModel._meta
+
+    for attr in ("host", "port", "indices", "database",
+                 "collection", "collection_class"):
+        assert hasattr(meta, attr)
+
+    assert meta.database == "test"
+    assert meta.collection == "minimongo_test"
+    assert meta.indices == (Index("x"), )
+
+
+def test_dictyness():
+    item = TestModel({"x": 642})
+
+    assert item["x"] == item.x == 642
+
+    item.y = 426
+    assert item["y"] == item.y == 426
+
+    assert set(item.keys()) == set(["x", "y"])
+
+    del item["x"]
+    assert item == {"y": 426}
+    item.z = 3
+    del item.y
+    assert item == {"z": 3}
+
+
+def test_creation():
+    """Test simple object creation and querying via find_one."""
+    dummy_m = TestModel({"x": 1, "y": 1})
+    dummy_m.z = 1
+    dummy_m.save()
+
+    dummy_n = TestModel.collection.find_one({"x": 1})
+
+    # Make sure that the find_one method returns the right type.
+    assert isinstance(dummy_n, TestModel)
+    # Make sure that the contents are the same.
+    assert dummy_n == dummy_m
+
+    # Make sure that our internal representation is what we expect (and
+    # no extra fields, etc.)
+    assert dummy_m == {"x": 1, "y": 1, "z": 1, "_id": dummy_m._id}
+    assert dummy_n == {"x": 1, "y": 1, "z": 1, "_id": dummy_n._id}
+
+
+def test_find_one():
+    model = TestModel({"x": 1, "y": 1})
+    model.save()
+
+    assert model._id is not None
+
+    # Making sure we find_one accepts strings as well as ObjectIds.
+
+    # a) ObjectId
+    found = TestModel.collection.find_one(model._id)
+    assert found is not None
+    assert isinstance(found, TestModel)
+    assert found == model
+
+    # b) str
+    found = TestModel.collection.find_one("%s" % model._id)
+    assert found is not None
+    assert isinstance(found, TestModel)
+    assert found == model
+
+
+def test_index_existance():
+    """Test that indexes were created properly."""
+    indices = TestModel.collection.index_information()
+    assert indices["x_1"] == {"key": [("x", 1)]}
+
+
+def test_unique_index():
+    """Test behavior of indices with unique=True"""
+    # This will work (y is undefined)
+    TestModelUnique({"x": 1}).save()
+    TestModelUnique({"x": 1}).save()
+    # Assert that there's only one object in the collection, even though
+    # we inserted two.  The uniqueness constraint on the index has dropped
+    # one of the inserts (silently, I guess).
+    assert TestModelUnique.collection.find().count() == 1
+
+    # Even if we use dieferent values for y, it's still only one object:
+    TestModelUnique({"x": 2, "y": 1}).save()
+    TestModelUnique({"x": 2, "y": 2}).save()
+    # There are now 2 objects, one with x=1, one with x=2.
+    assert TestModelUnique.collection.find().count() == 2
+
+
+def test_unique_constraint():
+    x1_a = TestModelUnique({'x': 1, 'y': 1})
+    x1_b = TestModelUnique({'x': 1, 'y': 2})
+    x1_a.save(safe=True)
+
+    with pytest.raises(DuplicateKeyError):
+        x1_b.save(safe=True)
+
+    x1_c = TestModelUnique({'x': 2, 'y': 1})
+    x1_c.save()
+
+
+def test_queries():
+    """Test some more complex query forms."""
+    dummy_a = TestModel({"x": 1, "y": 1}).save()
+    dummy_b = TestModel({"x": 1, "y": 2}).save()
+    dummy_c = TestModel({"x": 2, "y": 2}).save()
+    dummy_d = TestModel({"x": 2, "y": 1}).save()
+
+    found_x1 = TestModel.collection.find({"x": 1})
+    found_y1 = TestModel.collection.find({"y": 1})
+    found_x2y2 = TestModel.collection.find({"x": 2, "y": 2})
+
+    list_x1 = list(found_x1)
+    list_y1 = list(found_y1)
+    list_x2y2 = list(found_x2y2)
+
+    # make sure the types of the things coming back from find() are the
+    # derived Model types, not just a straight dict.
+    assert isinstance(list_x1[0], TestModel)
+
+    assert dummy_a in list_x1
+    assert dummy_b in list_x1
+    assert dummy_a in list_y1
+    assert dummy_d in list_y1
+    assert dummy_c == list_x2y2[0]
+
+
+def test_deletion():
+    """Test deleting an object from a collection."""
+    dummy_m = TestModel()
+    dummy_m.x = 100
+    dummy_m.y = 200
+    dummy_m.save()
+
+    dummy_n = TestModel.collection.find({'x': 100})
+    assert dummy_n.count() == 1
+
+    map(operator.methodcaller("remove"), dummy_n)
+
+    dummy_m = TestModel.collection.find({'x': 100})
+    assert dummy_m.count() == 0
+
+
+def test_complex_types():
+    """Test lists as types."""
+    dummy_m = TestModel()
+    dummy_m.l = ["a", "b", "c"]
+    dummy_m.x = 1
+    dummy_m.y = {"m": "n",
+                 "o": "p"}
+    dummy_m.save()
+
+    dummy_n = TestModel.collection.find_one({"x": 1})
+
+    # Make sure the internal lists are equivalent.
+    assert dummy_m.l == dummy_n.l
+
+    # There"s a bug in pymongo here.  The following assert will fire:
+    # self.assertEqual(type(dummy_m.y), type(dummy_n.y))
+    # with AssertionError: <type "dict"> != <class "__main__.TestModel">
+    # because as_class is applied recursively.  Ugh!
+
+    assert dummy_m == dummy_n
+
+
+def test_delete_field():
+    """Test deleting a single field from an object."""
+    dummy_m = TestModel({"x": 1, "y": 2})
+    dummy_m.save()
+    del dummy_m.x
+    dummy_m.save()
+
+    assert TestModel.collection.find_one({"y": 2}) == \
+           {"y": 2, "_id": dummy_m._id}
+
+
+def test_count_and_fetch():
+    """Test counting methods on Cursors. """
+    dummy_d = TestModel({"x": 1, "y": 4}).save()
+    dummy_b = TestModel({"x": 1, "y": 2}).save()
+    dummy_a = TestModel({"x": 1, "y": 1}).save()
+    dummy_c = TestModel({"x": 1, "y": 3}).save()
+
+    find_x1 = TestModel.collection.find({"x": 1}).sort("y")
+    assert find_x1.count() == 4
+
+    list_x1 = list(find_x1)
+    assert list_x1[0] == dummy_a
+    assert list_x1[1] == dummy_b
+    assert list_x1[2] == dummy_c
+    assert list_x1[3] == dummy_d
+
+
+def test_fetch_and_limit():
+    """Test counting methods on Cursors. """
+    dummy_a = TestModel({"x": 1, "y": 1}).save()
+    dummy_b = TestModel({"x": 1, "y": 2}).save()
+    TestModel({"x": 1, "y": 4}).save()
+    TestModel({"x": 1, "y": 3}).save()
+
+    find_x1 = TestModel.collection.find({"x": 1}).limit(2).sort("y")
+
+    assert find_x1.count(with_limit_and_skip=True) == 2
+    assert dummy_a in find_x1
+    assert dummy_b in find_x1
+
+
+def test_dbref():
+    """Test generation of DBRef objects, and querying via DBRef
+    objects."""
+    dummy_a = TestModel({"x": 1, "y": 999}).save()
+    ref_a = dummy_a.dbref()
+
+    dummy_b = TestModel.collection.from_dbref(ref_a)
+    assert dummy_a == dummy_b
+
+    # Making sure, that a ValueError is raised for DBRefs from a
+    # "foreign" collection or database.
+    with pytest.raises(ValueError):
+        ref_a = DBRef("foo", ref_a.id)
+        TestModel.collection.from_dbref(ref_a)
+
+    with pytest.raises(ValueError):
+        ref_a = DBRef(ref_a.collection, ref_a.id, "foo")
+        TestModel.collection.from_dbref(ref_a)
+
+    # Testing ``with_database`` option.
+    ref_a = dummy_a.dbref(with_database=False)
+    assert ref_a.database is None
+
+    ref_a = dummy_a.dbref(with_database=True)
+    assert ref_a.database is not None
+
+    ref_a = dummy_a.dbref()  # True by default.
+    assert ref_a.database is not None
+
+
+def test_db_and_collection_names():
+    """Test the methods that return the current class's DB and
+    Collection names."""
+    dummy_a = TestModel({"x": 1})
+    assert dummy_a.database.name == "test"
+    assert TestModel.database.name == "test"
+    assert dummy_a.collection.name == "minimongo_test"
+    assert TestModel.collection.name == "minimongo_test"
+
+
+def test_derived():
+    """Test Models that are derived from other models."""
+    der = TestDerivedModel()
+    der.a_method()
+
+    assert der.database.name == "test"
+    assert der.collection.name == "minimongo_derived"
+
+    assert TestDerivedModel.collection.find_one({"x": 123}) == der
+
+
+def test_collection_class():
+    model = TestModelCollection()
+
+    assert isinstance(model.collection, TestCollection)
+    assert hasattr(model.collection, "custom")
+    assert model.collection.custom() == "It works!"
+
+
+def test_str_and_unicode():
+    assert str(TestModel()) == "TestModel({})"
+    assert str(TestModel({"foo": "bar"})) == "TestModel({'foo': 'bar'})"
+
+    assert unicode(TestModel({"foo": "bar"})) == \
+           u"TestModel({'foo': 'bar'})"
+
+    # __unicode__() doesn't decode any bytestring values to unicode,
+    # leaving it up to the user.
+    assert unicode(TestModel({"foo": "←"})) ==  \
+           u"TestModel({'foo': '\\xe2\\x86\\x90'})"
+    assert unicode(TestModel({"foo": u"←"})) == \
+           u"TestModel({'foo': u'\\u2190'})"
+
+
+def test_auto_collection_name():
+    try:
+        class SomeModel(Model):
+            class Meta:
+                database = "test"
+    except Exception:
+        pytest.fail("`collection_name` should've been constructed.")
+
+    assert SomeModel.collection.name == "some_model"
+
+
+def test_nometa():
+    configure(database="test")
+
+    try:
+        class SomeModel(Model):
+            pass
+    except Exception:
+        pytest.fail("A model with no Meta is perfectly fine :)")
+
+    del Options.database
+
+
+def test_no_auto_index():
+    TestNoAutoIndexModel({"x": 1}).save()
+    assert TestNoAutoIndexModel.collection.index_information() == \
+           {u"_id_": {u"key": [(u"_id", 1)]}}
+
+    TestNoAutoIndexModel.auto_index()
+
+    assert TestNoAutoIndexModel.collection.index_information() == \
+           {u"_id_": {u"key": [(u"_id", 1)]},
+            u"x_1": {u"key": [(u"x", 1)]}}
+
+
+def test_to_underscore():
+    assert to_underscore("Foobar") == "foobar"
+    assert to_underscore("fooBar") == "foo_bar"
+    assert to_underscore("FooBar42") == "foo_bar42"
+    assert to_underscore("Foo42Bar") == "foo42_bar"
+
+
+def test_configure():
+    # a) keyword arguments
+    assert not hasattr(Options, "foo")
+    configure(foo="bar")
+    assert hasattr(Options, "foo")
+    del Options.foo
+
+    # b) module
+    assert not hasattr(Options, "foo")
+    module = ModuleType("config")
+    module.MONGODB_FOO = "bar"
+    module.NON_MONGO_ATTR = "bar"
+    configure(foo="bar")
+    assert not hasattr(Options, "NON_MONGO_ATTR")
+    assert not hasattr(Options, "MONGODB_FOO")
+    assert hasattr(Options, "foo")
+    del Options.foo
+
+    # c) non-module (fails silently)
+    try:
+        configure(42)
+        configure(None)
+        configure("foobar")
+    except Exception:
+        pytest.fail("configure() should fail silently on invalid input.")
+
+
+def test_options_init():
+    class Meta:
+        foo = "bar"
+
+    options = Options(Meta)
+    assert options.foo, "bar"
+
+
+def test_optoins_configure():
+    # Options have no defaults yet -- configure() was never called.
+    with pytest.raises(AttributeError):
+        Options.foo
+
+    Options.configure(foo="bar")
+
+    try:
+        assert Options.foo == "bar"
+    except AttributeError:
+        pytest.fail("Options.foo should've been set.")
+
+    del Options.foo
+
+
+if __name__ == "__main__":
+    pytest.main()

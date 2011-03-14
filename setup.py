@@ -1,31 +1,54 @@
-import os
+# -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages
+import os
+import sys
+import subprocess
+
+try:
+    from setuptools import find_packages, setup, Command
+except ImportError:
+    from distutils.core import find_packages, setup, Command
+
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.rst')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+README = open(os.path.join(here, "README.rst")).read()
+CHANGES = open(os.path.join(here, "CHANGES.txt")).read()
 
-requires = ['pymongo']
 
-setup(name='minimongo',
-      version='0.2.5',
-      description='Minimal database Model management for MongoDB',
-      long_description=README + '\n\n' + CHANGES,
-      classifiers=[
+class PyTest(Command):
+    user_options = []
+    initialize_options = finalize_options = lambda self: None
+
+    def run(self):
+        errno = subprocess.call([
+            sys.executable, "runtests.py",
+            os.path.join(here, "minimongo", "test.py")
+        ])
+        raise SystemExit(errno)
+
+
+requires = ["pymongo"]
+
+setup(
+    name="minimongo",
+    version="0.2.5",
+    packages=find_packages(),
+    cmdclass={"test": PyTest},
+
+    install_requires = ["pymongo>=1.9"],
+    zip_safe=False,
+    include_package_data=True,
+
+    author="Steve Lacy",
+    author_email="slacy@slacy.com",
+    description="Minimal database Model management for MongoDB",
+    long_description=README + "\n\n" + CHANGES,
+    classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python",
         "Topic :: Database",
-        ],
-      author='Steve Lacy',
-      author_email='slacy@slacy.com',
-      url='http://github.com/slacy/minimongo',
-      keywords=['mongo', 'mongodb', 'pymongo', 'orm'],
-      packages=find_packages(),
-      include_package_data=True,
-      zip_safe=False,
-      install_requires=requires,
-      tests_require=requires + ["unittest2"],
-      test_suite="minimongo",
-      )
+    ],
+    keywords=["mongo", "mongodb", "pymongo", "orm"],
+    url="http://github.com/slacy/minimongo",
+)
