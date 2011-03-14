@@ -16,14 +16,14 @@ CHANGES = open(os.path.join(here, "CHANGES.txt")).read()
 
 
 class PyTest(Command):
+    """Unfortunately :mod:`setuptools` support only :mod:`unittest`
+    based tests, thus, we have to overider build-in ``test`` command
+    to run :mod:`pytest`."""
     user_options = []
     initialize_options = finalize_options = lambda self: None
 
     def run(self):
-        errno = subprocess.call([
-            sys.executable, "runtests.py",
-            os.path.join(here, "minimongo", "test.py")
-        ])
+        errno = subprocess.call([sys.executable, "runtests.py"])
         raise SystemExit(errno)
 
 
