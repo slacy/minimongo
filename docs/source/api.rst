@@ -1,6 +1,9 @@
+===
 API
----
+===
+
 .. currentmodule:: minimongo
+
 
 .. autofunction:: configure
 

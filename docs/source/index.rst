@@ -60,7 +60,7 @@ Features
 * **Easy index creation and management**
 
   Indices for a given collection can be specified at declaration time. This
-  results in automatic calls to :meth:`pymongo_.collection.Collection.ensure_index`
+  results in automatic calls to :meth:`pymongo.collection.Collection.ensure_index`
   method at the time your program starts up. Therefore, all the proper indices
   for your collections are always in place.
 
