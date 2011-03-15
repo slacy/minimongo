@@ -2,7 +2,7 @@ minimongo
 =========
 
 :Info: Minimal database Model management for MongoDB.
-:Author: Harry Marr (http://github.com/hmarr)
+:Author: Steve Lacy (github@slacy.com)
 
 
 About
@@ -18,12 +18,6 @@ calls the existing pymongo_ query syntax.
 ``minimongo`` can easily layer on top of existing MongoDB collections, and
 will work properly with almost any existing schema, even from third party
 applications.
-
-Contact::
-
-    Steve Lacy <github@slacy.com>
-    Twitter: @sklacy
-    http://slacy.com/blog
 
 
 Installation
