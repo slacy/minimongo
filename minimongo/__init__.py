@@ -75,7 +75,7 @@ class Collection(PyMongoCollection):
         it returns the right document class.
         '''
         kwargs['as_class'] = self.document_class
-        return super(Collection, self).find_one(spec_or_id, *args, **kwargs)
+        return super(Collection, self).find_one(*args, **kwargs)
 
     def from_dbref(self, dbref):
         '''Given a :class:`pymongo.dbref.DBRef`, dereferences it and

@@ -131,16 +131,7 @@ def test_find_one():
 
     assert model._id is not None
 
-    # Making sure we find_one accepts strings as well as ObjectIds.
-
-    # a) ObjectId
     found = TestModel.collection.find_one(model._id)
-    assert found is not None
-    assert isinstance(found, TestModel)
-    assert found == model
-
-    # b) str
-    found = TestModel.collection.find_one('%s' % model._id)
     assert found is not None
     assert isinstance(found, TestModel)
     assert found == model
@@ -347,17 +338,17 @@ def test_collection_class():
 
 def test_str_and_unicode():
     assert str(TestModel()) == 'TestModel({})'
-    assert str(TestModel({'foo': 'bar'})) == 'TestModel({'foo': 'bar'})'
+    assert str(TestModel({'foo': 'bar'})) == 'TestModel({\'foo\': \'bar\'})'
 
     assert unicode(TestModel({'foo': 'bar'})) == \
-           u'TestModel({'foo': 'bar'})'
+           u'TestModel({\'foo\': \'bar\'})'
 
     # __unicode__() doesn't decode any bytestring values to unicode,
     # leaving it up to the user.
     assert unicode(TestModel({'foo': '←'})) ==  \
-           u'TestModel({'foo': '\\xe2\\x86\\x90'})'
+           u'TestModel({\'foo\': \'\\xe2\\x86\\x90\'})'
     assert unicode(TestModel({'foo': u'←'})) == \
-           u'TestModel({'foo': u'\\u2190'})'
+           u'TestModel({\'foo\': u\'\\u2190\'})'
 
 
 def test_auto_collection_name():
