@@ -70,26 +70,11 @@ class Collection(PyMongoCollection):
         kwargs['as_class'] = self.document_class
         return super(Collection, self).find(*args, **kwargs)
 
-    def find_one(self, spec_or_id, *args, **kwargs):
+    def find_one(self, *args, **kwargs):
         '''Same as :meth:`pymongo.collection.Collection.find_one`, except
         it returns the right document class.
-
-        .. note:: If a given `spec_or_id` is an instance of :func:`str`
-                  or :func:`unicode`, we try coercing it to
-                  :class:`pymongo.objectid.ObjectId` and fail silently in
-                  case of an error.
         '''
         kwargs['as_class'] = self.document_class
-
-        # The problem with default find_one() method is that, it fails
-        # to fetch a document, if a given id is a string. So, we try to
-        # convert `spec_or_id` to ObjectId and fail silently on exception.
-        if isinstance(spec_or_id, basestring):
-            try:
-                spec_or_id = ObjectId(spec_or_id)
-            except InvalidId:
-                pass
-
         return super(Collection, self).find_one(spec_or_id, *args, **kwargs)
 
     def from_dbref(self, dbref):
