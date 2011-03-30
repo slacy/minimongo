@@ -474,3 +474,25 @@ def test_field_mapper():
 
     assert type(loaded_mapped_object.y) == int
     assert type(loaded_mapped_object.z) == float
+
+
+def test_slicing():
+    object_a = TestModel({'x':1}).save()
+    object_b = TestModel({'x':2}).save()
+    object_c = TestModel({'x':3}).save()
+    object_d = TestModel({'x':4}).save()
+    object_e = TestModel({'x':5}).save()
+
+    objects = TestModel.collection.find().sort('x')
+    obj_list = list(objects[:2])
+    assert obj_list == [object_a, object_b]
+    assert type(obj_list[0]) == TestModel
+    assert type(obj_list[1]) == TestModel
+
+    # We can't re-slice an already sliced cursor, so we query again.
+    objects = TestModel.collection.find().sort('x')
+    obj_list = list(objects[2:])
+    assert obj_list == [object_c, object_d, object_e]
+    assert type(obj_list[0] == TestModel)
+    assert type(obj_list[1] == TestModel)
+    assert type(obj_list[2] == TestModel)

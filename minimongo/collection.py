@@ -13,6 +13,12 @@ class Cursor(PyMongoCursor):
         data = super(Cursor, self).next()
         return self._wrapper_class(data)
 
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return super(Cursor, self).__getitem__(index)
+        else:
+            return self._wrapper_class(super(Cursor, self).__getitem__(index))
+
 
 class Collection(PyMongoCollection):
     """A wrapper around :class:`pymongo.collection.Collection` that
