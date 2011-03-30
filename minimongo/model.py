@@ -88,8 +88,32 @@ class ModelBase(type):
         for index in mcs._meta.indices:
             index.ensure(mcs.collection)
 
+class AttrDict(dict):
+    # These lines make this object behave both like a dict (x['y']) and like
+    # an object (x.y).  We have to translate from KeyError to AttributeError
+    # since model.undefined raises a KeyError and model['undefined'] raises
+    # a KeyError.  we don't ever want __getattr__ to raise a KeyError, so we
+    # 'translate' them below:
+    def __getattr__(self, attr):
+        try:
+            return self[attr]
+        except KeyError as excn:
+            raise AttributeError(excn)
 
-class Model(dict):
+    def __setattr__(self, attr, value):
+        try:
+            self[attr] = value
+        except KeyError as excn:
+            raise AttributeError(excn)
+
+    def __delattr__(self, key):
+        try:
+            del self[key]
+        except KeyError as excn:
+            raise AttributeError(excn)
+
+
+class Model(AttrDict):
     """Base class for all Minimongo objects.
 
     >>> class Foo(Model):
@@ -115,28 +139,27 @@ class Model(dict):
     def __unicode__(self):
         return str(self).decode('utf-8')
 
-    # These lines make this object behave both like a dict (x['y']) and like
-    # an object (x.y).  We have to translate from KeyError to AttributeError
-    # since model.undefined raises a KeyError and model['undefined'] raises
-    # a KeyError.  we don't ever want __getattr__ to raise a KeyError, so we
-    # 'translate' them below:
-    def __getattr__(self, attr):
-        try:
-            return self[attr]
-        except KeyError as excn:
-            raise AttributeError(excn)
+    def __init__(self, initial=None):
+        if initial:
+            for k, v in initial.iteritems():
+                self[k] = v
+        return super(Model, self).__init__()
 
-    def __setattr__(self, attr, value):
-        try:
-            self[attr] = value
-        except KeyError as excn:
-            raise AttributeError(excn)
+    def __setitem__(self, key, value):
+        # Go through the defined list of field mappers.  If the fild
+        # matches, then modify the field value by calling the function in
+        # the mapper.  Mapped fields must have a different type than their
+        # counterpart, otherwise they'll be mapped more than once as they
+        # come back in from a find() or find_one() call.
+        if self._meta and self._meta.field_map:
+            for matcher, mogrify in self._meta.field_map:
+                if matcher(key, value):
+                    new_value = mogrify(value)
+                    if type(new_value) == type(value):
+                        raise Exception("Field mapper didn't change field type!")
+                    value = new_value
 
-    def __delattr__(self, key):
-        try:
-            del self[key]
-        except KeyError as excn:
-            raise AttributeError(excn)
+        return super(Model, self).__setitem__(key, value)
 
     def dbref(self, with_database=True):
         """Returns a DBRef for the current object.

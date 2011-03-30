@@ -53,6 +53,14 @@ class _Options(object):
     # What is the base class for Collections.
     collection_class = Collection
 
+    # A list of tuples.  Each tuple's first element is function that will be
+    # called for every __setitem__, and takes the key & value.  It should
+    # return a boolean value as to whether or not the second function should
+    # be called on the value to modify the value in place.  This can be used
+    # for things like mapping dict to defaultdict, mapping document classes
+    # or dbref's that are coming in from a loaded object, etc.
+    field_map = ()
+
     # Is this an interface (i.e. will we derive from it and declare Meta
     # properly in the subclasses.)
     interface = False
