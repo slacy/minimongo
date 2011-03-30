@@ -11,6 +11,12 @@ Uses the following 3 strategies:
 import os
 import sys
 
+#####################################################################
+# DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED #
+# DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED #
+# DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED #
+# DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED #
+#####################################################################
 
 # Default values for MONGODB_HOST and MONGODB_PORT if no custom config
 # module is specified, or if we're unable to 'from minimongo.app_config import

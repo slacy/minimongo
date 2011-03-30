@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-
 from types import ModuleType
 
 import pytest
 
-from minimongo import Model, Options, configure, to_underscore
+from minimongo import Model, configure
+from minimongo.options import _Options
+from minimongo.model import to_underscore
 
 
 def test_nometa():
@@ -16,7 +17,7 @@ def test_nometa():
     except Exception:
         pytest.fail('A model with no Meta is perfectly fine :)')
 
-    del Options.database
+    del _Options.database
 
 
 def test_to_underscore():
@@ -28,21 +29,21 @@ def test_to_underscore():
 
 def test_configure():
     # a) keyword arguments
-    assert not hasattr(Options, 'foo')
+    assert not hasattr(_Options, 'foo')
     configure(foo='bar')
-    assert hasattr(Options, 'foo')
-    del Options.foo
+    assert hasattr(_Options, 'foo')
+    del _Options.foo
 
     # b) module
-    assert not hasattr(Options, 'foo')
+    assert not hasattr(_Options, 'foo')
     module = ModuleType('config')
     module.MONGODB_FOO = 'bar'
     module.NON_MONGO_ATTR = 'bar'
     configure(foo='bar')
-    assert not hasattr(Options, 'NON_MONGO_ATTR')
-    assert not hasattr(Options, 'MONGODB_FOO')
-    assert hasattr(Options, 'foo')
-    del Options.foo
+    assert not hasattr(_Options, 'NON_MONGO_ATTR')
+    assert not hasattr(_Options, 'MONGODB_FOO')
+    assert hasattr(_Options, 'foo')
+    del _Options.foo
 
     # c) non-module (fails silently)
     try:
@@ -57,20 +58,20 @@ def test_options_init():
     class Meta:
         foo = 'bar'
 
-    options = Options(Meta)
+    options = _Options(Meta)
     assert options.foo, 'bar'
 
 
 def test_optoins_configure():
     # Options have no defaults yet -- configure() was never called.
     with pytest.raises(AttributeError):
-        Options.foo
+        _Options.foo
 
-    Options.configure(foo='bar')
+    configure(foo='bar')
 
     try:
-        assert Options.foo == 'bar'
+        assert _Options.foo == 'bar'
     except AttributeError:
         pytest.fail('Options.foo should\'ve been set.')
 
-    del Options.foo
+    del _Options.foo

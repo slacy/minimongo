@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import with_statement
 
 import operator
@@ -9,7 +8,6 @@ from pymongo.dbref import DBRef
 from pymongo.errors import DuplicateKeyError
 
 from minimongo import Collection, Index, Model
-
 
 class TestCollection(Collection):
     def custom(self):
