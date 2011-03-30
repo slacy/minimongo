@@ -219,6 +219,9 @@ def test_complex_types():
     dummy_m.x = 1
     dummy_m.y = {'m': 'n',
                  'o': 'p'}
+    dummy_m['z'] = {'q': 'r',
+                    's': {'t': 'u'}}
+
     dummy_m.save()
 
     dummy_n = TestModel.collection.find_one({'x': 1})
@@ -226,10 +229,12 @@ def test_complex_types():
     # Make sure the internal lists are equivalent.
     assert dummy_m.l == dummy_n.l
 
-    # There's a bug in pymongo here.  The following assert will fire:
-    # self.assertEqual(type(dummy_m.y), type(dummy_n.y))
-    # with AssertionError: <type 'dict'> != <class '__main__.TestModel'>
-    # because as_class is applied recursively.  Ugh!
+    # Make sure that everything is of the right type, including the types of
+    # the nested fields that we read back from the DB.
+    assert type(dummy_m) == type(dummy_n) == TestModel
+    assert type(dummy_m.y) == type(dummy_n.y) == dict
+    assert type(dummy_m['z']) == type(dummy_n.z) == dict
+    assert type(dummy_m['z']['s']) == type(dummy_n['z']['s']) == dict
 
     assert dummy_m == dummy_n
 

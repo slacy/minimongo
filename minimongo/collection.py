@@ -1,6 +1,18 @@
 # -*- coding: utf-8 -*-
 
 from pymongo.collection import Collection as PyMongoCollection
+from pymongo.cursor import Cursor as PyMongoCursor
+
+class Cursor(PyMongoCursor):
+
+    def __init__(self, *args, **kwargs):
+        self._wrapper_class = kwargs.pop('wrap')
+        super(Cursor, self).__init__(*args, **kwargs)
+
+    def next(self):
+        data = super(Cursor, self).next()
+        return self._wrapper_class(data)
+
 
 class Collection(PyMongoCollection):
     '''A wrapper around :class:`pymongo.collection.Collection` that
@@ -22,15 +34,14 @@ class Collection(PyMongoCollection):
         '''Same as :meth:`pymongo.collection.Collection.find`, except
         it returns the right document class.
         '''
-        kwargs['as_class'] = self.document_class
-        return super(Collection, self).find(*args, **kwargs)
+        return Cursor(self, *args, wrap=self.document_class, **kwargs)
 
     def find_one(self, *args, **kwargs):
         '''Same as :meth:`pymongo.collection.Collection.find_one`, except
         it returns the right document class.
         '''
-        kwargs['as_class'] = self.document_class
-        return super(Collection, self).find_one(*args, **kwargs)
+        data = super(Collection, self).find_one(*args, **kwargs)
+        return self.document_class(data)
 
     def from_dbref(self, dbref):
         '''Given a :class:`pymongo.dbref.DBRef`, dereferences it and
