@@ -112,6 +112,13 @@ class AttrDict(dict):
         except KeyError as excn:
             raise AttributeError(excn)
 
+    def __setitem__(self, key, value):
+        # Coerce all nested dict-valued fields into AttrDicts
+        new_value = value
+        if isinstance(value, dict):
+            new_value = AttrDict(value)
+        return super(AttrDict, self).__setitem__(key, new_value)
+
 
 class Model(AttrDict):
     """Base class for all Minimongo objects.

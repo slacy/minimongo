@@ -254,11 +254,23 @@ def test_complex_types():
     assert dummy_m.l == dummy_n.l
 
     # Make sure that everything is of the right type, including the types of
-    # the nested fields that we read back from the DB.
+    # the nested fields that we read back from the DB, and that we are able
+    # to access fields as both attrs and items.
     assert type(dummy_m) == type(dummy_n) == TestModel
-    assert type(dummy_m.y) == type(dummy_n.y) == dict
-    assert type(dummy_m['z']) == type(dummy_n.z) == dict
-    assert type(dummy_m['z']['s']) == type(dummy_n['z']['s']) == dict
+    assert isinstance(dummy_m.y, dict)
+    assert isinstance(dummy_n.y, dict)
+    assert isinstance(dummy_m['z'], dict)
+    assert isinstance(dummy_n['z'], dict)
+    assert isinstance(dummy_m.z, dict)
+    assert isinstance(dummy_n.z, dict)
+
+    # These nested fields are actually instances of AttrDict, which is why
+    # we can access as both attributes and values.  Thus, the "isinstance"
+    # dict check.
+    assert isinstance(dummy_m['z']['s'], dict)
+    assert isinstance(dummy_n['z']['s'], dict)
+    assert isinstance(dummy_m.z.s, dict)
+    assert isinstance(dummy_n.z.s, dict)
 
     assert dummy_m == dummy_n
 
@@ -462,4 +474,3 @@ def test_field_mapper():
 
     assert type(loaded_mapped_object.y) == int
     assert type(loaded_mapped_object.z) == float
-

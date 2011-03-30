@@ -3,7 +3,7 @@ from types import ModuleType
 
 import pytest
 
-from minimongo import Model, configure
+from minimongo import Model, configure, AttrDict
 from minimongo.options import _Options
 from minimongo.model import to_underscore
 
@@ -75,3 +75,42 @@ def test_optoins_configure():
         pytest.fail('Options.foo should\'ve been set.')
 
     del _Options.foo
+
+
+def test_attr_dict():
+    d = AttrDict()
+    d.x = 1
+    d.y = {}
+    d.y.z = 2
+    d.q = AttrDict()
+    d.q.r = 3
+    d.q.s = AttrDict(AttrDict({}))  # I'm just being weird
+    d['q']['s']['t'] = 4
+
+    assert d.x == 1
+    assert d.y.z == d['y']['z']
+    assert d.y.z == 2
+    assert d.q.r == d['q']['r']
+    assert d.q.r == 3
+    assert d.q.s.t == d['q'].s['t']  # Don't do this in real code.
+    assert isinstance(d, dict)
+    assert isinstance(d.y, dict)
+    assert isinstance(d['y'], dict)
+    assert isinstance(d.q.s, dict)
+    assert isinstance(d['q']['s'], dict)
+    assert isinstance(d.q.s, dict)
+    assert isinstance(d['q']['s'], dict)
+
+    # We can say AttrDict(AttrDict({'foo': 'bar'})) with no ill effects.
+    e = AttrDict(d)
+    assert e == d
+    assert e.x == 1
+    assert e.y.z == d['y']['z']
+    assert e.y.z == 2
+    assert e.q.r == d['q']['r']
+    assert e.q.r == 3
+    assert isinstance(e, dict)
+    assert isinstance(e.y, dict)
+    assert isinstance(e['y'], dict)
+    # etc.
+
