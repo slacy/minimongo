@@ -7,11 +7,11 @@ import minimongo.options
 
 
 class ModelBase(type):
-    '''Metaclass for all models.
+    """Metaclass for all models.
 
     .. todo:: add Meta inheritance -- so that missing attributes are
               populated from the parrent's Meta if any.
-    '''
+    """
 
     # A very rudimentary connection pool.
     _connections = {}
@@ -65,7 +65,7 @@ class ModelBase(type):
         return new_class
 
     def auto_index(mcs):
-        '''Builds all indices, listed in model's Meta class.
+        """Builds all indices, listed in model's Meta class.
 
            >>> class SomeModel(Model)
            ...     class Meta:
@@ -77,13 +77,13 @@ class ModelBase(type):
                   :meth:`pymongo.collection.Collection.ensure_index`
                   method at import time, so import all your models up
                   front.
-        '''
+        """
         for index in mcs._meta.indices:
             index.ensure(mcs.collection)
 
 
 class Model(dict):
-    '''Base class for all Minimongo objects.
+    """Base class for all Minimongo objects.
 
     >>> class Foo(Model):
     ...     class Meta:
@@ -97,7 +97,7 @@ class Model(dict):
     {'bar': 42}
     >>> foo.bar == 42
     True
-    '''
+    """
 
     __metaclass__ = ModelBase
 
@@ -132,11 +132,11 @@ class Model(dict):
             raise AttributeError(excn)
 
     def dbref(self, with_database=True):
-        '''Returns a DBRef for the current object.
+        """Returns a DBRef for the current object.
 
         If `with_database` is False, the resulting :class:`pymongo.dbref.DBRef`
         won't have a :attr:`database` field.
-        '''
+        """
         if not hasattr(self, '_id'):
             self._id = ObjectId()
 
@@ -144,16 +144,16 @@ class Model(dict):
         return DBRef(self._meta.collection, self._id, database)
 
     def remove(self):
-        '''Remove this object from the database.'''
+        """Remove this object from the database."""
         return self.collection.remove(self._id)
 
     def mongo_update(self):
-        '''Update database data with object data.'''
+        """Update database data with object data."""
         self.collection.update({'_id': self._id}, self)
         return self
 
     def save(self, *args, **kwargs):
-        '''Save this object to it's mongo collection.'''
+        """Save this object to it's mongo collection."""
         self.collection.save(self, *args, **kwargs)
         return self
 
@@ -161,11 +161,11 @@ class Model(dict):
 # Utils.
 
 def to_underscore(string):
-    '''Converts a given string from CamelCase to under_score.
+    """Converts a given string from CamelCase to under_score.
 
     >>> to_underscore('FooBar')
     'foo_bar'
-    '''
+    """
     return re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', string).lower()
 
 
