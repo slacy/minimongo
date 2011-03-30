@@ -3,7 +3,8 @@ import re
 from pymongo import Connection
 from pymongo.dbref import DBRef
 from pymongo.objectid import ObjectId
-import minimongo.options
+from minimongo.options import _Options
+from minimongo.collection import DummyCollection
 
 
 class ModelBase(type):
@@ -33,8 +34,14 @@ class ModelBase(type):
             delattr(new_class, 'Meta')  # Won't need the original metadata
                                         # container anymore.
 
-        options = minimongo.options._Options(meta)
+        options = _Options(meta)
         options.collection = options.collection or to_underscore(name)
+
+        if options.interface:
+            new_class._meta = None
+            new_class.database = None
+            new_class.collection = DummyCollection
+            return new_class
 
         if not (options.host and options.port and options.database):
             raise Exception(
@@ -167,6 +174,4 @@ def to_underscore(string):
     'foo_bar'
     """
     return re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', string).lower()
-
-
 

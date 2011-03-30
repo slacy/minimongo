@@ -37,13 +37,25 @@ class _Options(object):
     be used instead.
     """
 
+    # Host & port of MongoDB server
     host = 'localhost'
     port = 27017
+    # Indexes that should be generated for this model
     indices = ()
+
+    # Current database and connection
     database = None
     collection = None
+
+    # Should indices be created at startup?
     auto_index = True
+
+    # What is the base class for Collections.
     collection_class = Collection
+
+    # Is this an interface (i.e. will we derive from it and declare Meta
+    # properly in the subclasses.)
+    interface = False
 
     def __init__(self, meta):
         if meta is not None:

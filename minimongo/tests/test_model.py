@@ -62,14 +62,28 @@ class TestNoAutoIndexModel(Model):
         auto_index = False
 
 
+class TestModelInterface(Model):
+    class Meta:
+        interface = True
+
+
+class TestModelImplementation(TestModelInterface):
+    class Meta:
+        database = 'test'
+        collection = 'minimongo_impl'
+
+
 def setup():
     TestModel.auto_index()
     TestModelUnique.auto_index()
 
 
 def teardown():
-    map(lambda m: m.collection.drop(),
-        Model.__subclasses__() + [TestDerivedModel])
+    all_models = set(Model.__subclasses__())
+    all_models.add(TestDerivedModel)
+    all_models.add(TestModelImplementation)
+    # all_models.remove(TestModelInterface)
+    map(lambda m: m.collection.drop(), all_models)
 
 
 def test_meta():
@@ -376,3 +390,14 @@ def test_no_auto_index():
     assert TestNoAutoIndexModel.collection.index_information() == \
            {u'_id_': {u'key': [(u'_id', 1)]},
             u'x_1': {u'key': [(u'x', 1)]}}
+
+
+def test_interface_models():
+    test_interface_instance = TestModelInterface()
+
+    test_model_instance = TestModelImplementation()
+    test_model_instance.x = 123
+    test_model_instance.save()
+
+    test_model_instance_2 = TestModelImplementation.collection.find_one({'x': 123})
+    assert test_model_instance == test_model_instance_2

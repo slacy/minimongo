@@ -41,7 +41,9 @@ class Collection(PyMongoCollection):
         it returns the right document class.
         """
         data = super(Collection, self).find_one(*args, **kwargs)
-        return self.document_class(data)
+        if data:
+            return self.document_class(data)
+        return None
 
     def from_dbref(self, dbref):
         """Given a :class:`pymongo.dbref.DBRef`, dereferences it and
@@ -59,3 +61,22 @@ class Collection(PyMongoCollection):
             raise ValueError('DBRef points to an invalid database.')
         else:
             return self.find_one(dbref.id)
+
+
+class DummyCollection(object):
+    @classmethod
+    def drop(*args, **kwargs):
+        # It's okay to drop this bogus collection for convenience's sake.
+        # We might actually want to find all classes derived from this guy
+        # and drop all those models here.
+        pass
+
+    @classmethod
+    def find(*args, **kwargs):
+        # Union-find over all models derived from this one?
+        raise Exception("Can't find on an interface collection")
+
+    @classmethod
+    def find_one(*args, **kwargs):
+        # Union-find over all models derived from this one?
+        raise Exception("Can't find_one on an interface collection")
