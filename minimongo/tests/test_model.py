@@ -253,6 +253,23 @@ def test_complex_types():
     assert dummy_m == dummy_n
 
 
+def test_type_from_cursor():
+    object_a = TestModel({'x':1}).save()
+    object_b = TestModel({'x':2}).save()
+    object_c = TestModel({'x':3}).save()
+    object_d = TestModel({'x':4}).save()
+    object_e = TestModel({'x':5}).save()
+
+    objects = TestModel.collection.find()
+    for single_object in objects:
+        assert type(single_object) == TestModel
+        # Make sure it's both a dict and a TestModel, which is also an object
+        assert isinstance(single_object, dict)
+        assert isinstance(single_object, object)
+        assert isinstance(single_object, TestModel)
+        assert type(single_object['x']) == int
+
+
 def test_delete_field():
     '''Test deleting a single field from an object.'''
     dummy_m = TestModel({'x': 1, 'y': 2})
@@ -293,6 +310,7 @@ def test_fetch_and_limit():
     assert find_x1.count(with_limit_and_skip=True) == 2
     assert dummy_a in find_x1
     assert dummy_b in find_x1
+
 
 def test_dbref():
     '''Test generation of DBRef objects, and querying via DBRef
@@ -394,6 +412,9 @@ def test_no_auto_index():
 
 def test_interface_models():
     test_interface_instance = TestModelInterface()
+    test_interface_instance.x = 5
+    with pytest.raises(Exception):
+        test_interface_instance.save()
 
     test_model_instance = TestModelImplementation()
     test_model_instance.x = 123

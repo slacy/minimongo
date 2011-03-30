@@ -72,6 +72,10 @@ class DummyCollection(object):
         pass
 
     @classmethod
+    def save(*args, **kwargs):
+        raise Exception("Can't save on an interface collection")
+
+    @classmethod
     def find(*args, **kwargs):
         # Union-find over all models derived from this one?
         raise Exception("Can't find on an interface collection")
