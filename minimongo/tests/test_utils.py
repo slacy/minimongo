@@ -114,3 +114,68 @@ def test_attr_dict():
     assert isinstance(e['y'], dict)
     # etc.
 
+
+class AttrDictDerived(AttrDict):
+    def __setitem__(self, key, value):
+        print "setitem %s %s" % (str(key), str(value))
+        if isinstance(value, (int, float)):
+            value *= 2
+        super(AttrDictDerived, self).__setitem__(key, value)
+
+    def __setattr__(self, attr, value):
+        print "setattr %s %s" % (str(attr), str(value))
+        if isinstance(value, (int, float)):
+            value += 0.5
+        return super(AttrDictDerived, self).__setattr__(attr, value)
+
+    def __delattr__(self, key):
+        print "delattr %s" % key
+        if not hasattr(self, 'old_attrs'):
+            super(AttrDictDerived, self).__setattr__('old_attrs', set())
+        self.old_attrs.add(key)
+        return super(AttrDictDerived, self).__delattr__(key)
+
+    def __delitem__(self, key):
+        print "delitem %s" % key
+        if not hasattr(self, 'old_items'):
+            super(AttrDictDerived, self).__setattr__('old_items', set())
+        self.old_items.add(key)
+        return super(AttrDictDerived, self).__delitem__(key)
+
+    def __getattr__(self, attr):
+        print "getattr %s" % attr
+        value = super(AttrDictDerived, self).__getattr__(attr)
+        if isinstance(value, (int, float)):
+            value += 3
+        return value
+
+
+class test_attr_dict_derived():
+    """Test classes that are derived from AttrDict that also override
+    setitem and getattr, etc.  This is actually a test of the behavior of
+    AttrDict itself, and that it doesn't generate infinite recursion when
+    these methods are overridden.  """
+    test_derived = AttrDictDerived()
+    test_derived.x = 3
+    assert test_derived['x'] == 3.5
+    assert test_derived.x == 6.5
+    test_derived['y'] = 5
+    assert test_derived['y'] == 10
+    assert test_derived.y == 13
+
+    test_derived_too = AttrDictDerived()
+    test_derived_too['x'] = 1
+    test_derived_too['y'] = 1
+    test_derived_too['z'] = 1
+    del test_derived_too['x']
+    del test_derived_too['z']
+    del test_derived_too['y']
+    test_derived_too.f = 1
+    assert test_derived_too.f == 4.5
+    del test_derived_too.f
+    with pytest.raises(AttributeError):
+        assert test_derived_too.f == 1
+    assert test_derived_too.old_items == set(['x', 'y', 'z'])
+    assert test_derived_too['old_items'] == set(['x', 'y', 'z'])
+    assert test_derived_too.old_attrs == set(['f'])
+    assert test_derived_too['old_attrs'] == set(['f'])

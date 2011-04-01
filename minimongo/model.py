@@ -96,19 +96,19 @@ class AttrDict(dict):
     # 'translate' them below:
     def __getattr__(self, attr):
         try:
-            return self[attr]
+            return super(AttrDict, self).__getitem__(attr)
         except KeyError as excn:
             raise AttributeError(excn)
 
     def __setattr__(self, attr, value):
         try:
-            self[attr] = value
+            return AttrDict.__setitem__(self, attr, value)
         except KeyError as excn:
             raise AttributeError(excn)
 
     def __delattr__(self, key):
         try:
-            del self[key]
+            return super(AttrDict, self).__delitem__(key)
         except KeyError as excn:
             raise AttributeError(excn)
 
@@ -149,8 +149,9 @@ class Model(AttrDict):
     def __init__(self, initial=None):
         if initial:
             for k, v in initial.iteritems():
-                self[k] = v
-        return super(Model, self).__init__()
+                # Can't just say self[k] = v here b/c of recursion.
+                self.__setitem__(k, v)
+        super(Model, self).__init__()
 
     def __setitem__(self, key, value):
         # Go through the defined list of field mappers.  If the fild
@@ -163,10 +164,11 @@ class Model(AttrDict):
                 if matcher(key, value):
                     new_value = mogrify(value)
                     if type(new_value) == type(value):
-                        raise Exception("Field mapper didn't change field type!")
+                        raise Exception(
+                            "Field mapper didn't change field type!")
                     value = new_value
 
-        return super(Model, self).__setitem__(key, value)
+        super(Model, self).__setitem__(key, value)
 
     def dbref(self, with_database=True):
         """Returns a DBRef for the current object.
