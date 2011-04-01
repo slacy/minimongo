@@ -112,41 +112,52 @@ def test_attr_dict():
     assert isinstance(e, dict)
     assert isinstance(e.y, dict)
     assert isinstance(e['y'], dict)
-    # etc.
+
+def test_attrdict_del():
+    f = AttrDict()
+    f.x = 1
+    del f.x
+    with pytest.raises(AttributeError):
+        tmp = f.x
+    with pytest.raises(KeyError):
+        tmp = f['x']
+
+    f['x'] = 1
+    del f['x']
+
+    with pytest.raises(KeyError):
+        tmp = f['x']
+    with pytest.raises(AttributeError):
+        tmp = f.x
 
 
 class AttrDictDerived(AttrDict):
     def __setitem__(self, key, value):
-        print "setitem %s %s" % (str(key), str(value))
         if isinstance(value, (int, float)):
-            value *= 2
+            value *= 5
         super(AttrDictDerived, self).__setitem__(key, value)
 
     def __setattr__(self, attr, value):
-        print "setattr %s %s" % (str(attr), str(value))
         if isinstance(value, (int, float)):
-            value += 0.5
+            value += 7
         return super(AttrDictDerived, self).__setattr__(attr, value)
 
     def __delattr__(self, key):
-        print "delattr %s" % key
         if not hasattr(self, 'old_attrs'):
             super(AttrDictDerived, self).__setattr__('old_attrs', set())
         self.old_attrs.add(key)
         return super(AttrDictDerived, self).__delattr__(key)
 
     def __delitem__(self, key):
-        print "delitem %s" % key
         if not hasattr(self, 'old_items'):
             super(AttrDictDerived, self).__setattr__('old_items', set())
         self.old_items.add(key)
         return super(AttrDictDerived, self).__delitem__(key)
 
     def __getattr__(self, attr):
-        print "getattr %s" % attr
         value = super(AttrDictDerived, self).__getattr__(attr)
         if isinstance(value, (int, float)):
-            value += 3
+            value += 11
         return value
 
 
@@ -154,14 +165,16 @@ class test_attr_dict_derived():
     """Test classes that are derived from AttrDict that also override
     setitem and getattr, etc.  This is actually a test of the behavior of
     AttrDict itself, and that it doesn't generate infinite recursion when
-    these methods are overridden.  """
+    these methods are overridden.  The math below and modifying values in
+    setitem and setattr is crazy, so please forgive me."""
     test_derived = AttrDictDerived()
     test_derived.x = 3
-    assert test_derived['x'] == 3.5
-    assert test_derived.x == 6.5
+    assert test_derived['x'] == (3 + 7) * 5
+
+    assert test_derived.x == ((3+7) * 5) + 11
     test_derived['y'] = 5
-    assert test_derived['y'] == 10
-    assert test_derived.y == 13
+    assert test_derived['y'] == 5 * 5
+    assert test_derived.y == (5 * 5) + 11
 
     test_derived_too = AttrDictDerived()
     test_derived_too['x'] = 1
@@ -171,10 +184,12 @@ class test_attr_dict_derived():
     del test_derived_too['z']
     del test_derived_too['y']
     test_derived_too.f = 1
-    assert test_derived_too.f == 4.5
+    assert test_derived_too.f == ((1 + 7) * 5) + 11
     del test_derived_too.f
     with pytest.raises(AttributeError):
         assert test_derived_too.f == 1
+    # Easiest way to test override of delattr and delitem is by keeping
+    # track of what happened.
     assert test_derived_too.old_items == set(['x', 'y', 'z'])
     assert test_derived_too['old_items'] == set(['x', 'y', 'z'])
     assert test_derived_too.old_attrs == set(['f'])

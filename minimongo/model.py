@@ -102,7 +102,8 @@ class AttrDict(dict):
 
     def __setattr__(self, attr, value):
         try:
-            return AttrDict.__setitem__(self, attr, value)
+            # Okay to set directly here, because we're not recursing.
+            self[attr] = value
         except KeyError as excn:
             raise AttributeError(excn)
 
