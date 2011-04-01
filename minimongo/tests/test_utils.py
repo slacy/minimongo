@@ -131,7 +131,36 @@ def test_attrdict_del():
         tmp = f.x
 
 
+def test_attr_dict_from_dict():
+    d = {
+        'a': 1,
+        'b': {
+            'c': 2,
+            'd': {
+                'e': 3,
+                'f': 4,
+               },
+            'g': 5,
+            },
+        'h': 6,
+        'i': 7,
+        }
+    attr_dict = AttrDict(d)
+    assert attr_dict.a == 1
+    assert attr_dict['a'] == 1
+
+    assert attr_dict.b.c == 2
+    assert attr_dict['b'].c == 2
+    assert attr_dict['b']['c'] == 2
+    assert attr_dict.b['c'] == 2
+
+    assert attr_dict.b.d.e == 3
+    assert attr_dict['b']['d']['e'] == 3
+
+
+
 class AttrDictDerived(AttrDict):
+
     def __setitem__(self, key, value):
         if isinstance(value, (int, float)):
             value *= 5

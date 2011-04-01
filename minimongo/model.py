@@ -89,6 +89,16 @@ class ModelBase(type):
             index.ensure(mcs.collection)
 
 class AttrDict(dict):
+    def __init__(self, initial=None):
+        # Make sure that during initialization, that we recursively apply
+        # AttrDict.  Maybe this could be better done with the builtin
+        # defaultdict?
+        if initial:
+            for k, v in initial.iteritems():
+                # Can't just say self[k] = v here b/c of recursion.
+                self.__setitem__(k, v)
+        super(AttrDict, self).__init__()
+
     # These lines make this object behave both like a dict (x['y']) and like
     # an object (x.y).  We have to translate from KeyError to AttributeError
     # since model.undefined raises a KeyError and model['undefined'] raises
@@ -146,13 +156,6 @@ class Model(AttrDict):
 
     def __unicode__(self):
         return str(self).decode('utf-8')
-
-    def __init__(self, initial=None):
-        if initial:
-            for k, v in initial.iteritems():
-                # Can't just say self[k] = v here b/c of recursion.
-                self.__setitem__(k, v)
-        super(Model, self).__init__()
 
     def __setitem__(self, key, value):
         # Go through the defined list of field mappers.  If the fild
