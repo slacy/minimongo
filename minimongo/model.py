@@ -62,6 +62,7 @@ class ModelBase(type):
             mcs._connections[hostport] = connection
 
         new_class._meta = options
+        new_class.connection = connection
         new_class.database = connection[options.database]
         new_class.collection = options.collection_class(
             new_class.database, options.collection, document_class=new_class)
