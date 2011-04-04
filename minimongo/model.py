@@ -195,9 +195,12 @@ class Model(AttrDict):
         """Remove this object from the database."""
         return self.collection.remove(self._id)
 
-    def mongo_update(self):
+    def mongo_update(self, values=None, **kwargs):
         """Update database data with object data."""
-        self.collection.update({'_id': self._id}, self)
+        #Allow to update external values as well as the model itself
+        if not values:
+            values = self
+        self.collection.update({'_id': self._id}, values, **kwargs)
         return self
 
     def save(self, *args, **kwargs):
