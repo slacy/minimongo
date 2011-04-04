@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
 from pymongo import Connection
-from pymongo.dbref import DBRef
-from pymongo.objectid import ObjectId
+from bson import DBRef
+from bson import ObjectId
 from minimongo.options import _Options
 from minimongo.collection import DummyCollection
 
@@ -179,17 +179,19 @@ class Model(AttrDict):
 
         super(Model, self).__setitem__(key, value)
 
-    def dbref(self, with_database=True):
+    def dbref(self, with_database=True, **kwargs):
         """Returns a DBRef for the current object.
 
         If `with_database` is False, the resulting :class:`pymongo.dbref.DBRef`
         won't have a :attr:`database` field.
+
+        Any other parameters will be passed to the DBRef constructor, as per the mongo specs.
         """
         if not hasattr(self, '_id'):
             self._id = ObjectId()
 
         database = self._meta.database if with_database else None
-        return DBRef(self._meta.collection, self._id, database)
+        return DBRef(self._meta.collection, self._id, database, **kwargs)
 
     def remove(self):
         """Remove this object from the database."""
