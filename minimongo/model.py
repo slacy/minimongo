@@ -89,7 +89,7 @@ class ModelBase(type):
             index.ensure(mcs.collection)
 
 class AttrDict(dict):
-    def __init__(self, initial=None):
+    def __init__(self, initial=None, **kwargs):
         # Make sure that during initialization, that we recursively apply
         # AttrDict.  Maybe this could be better done with the builtin
         # defaultdict?
@@ -97,6 +97,11 @@ class AttrDict(dict):
             for k, v in initial.iteritems():
                 # Can't just say self[k] = v here b/c of recursion.
                 self.__setitem__(k, v)
+        #Process the other arguments (assume they are also default values)
+        #this is to support AttrDict
+        for k, v in kwargs.iteritems():
+                self.__setitem__(k, v)
+
         super(AttrDict, self).__init__()
 
     # These lines make this object behave both like a dict (x['y']) and like
