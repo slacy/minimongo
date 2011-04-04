@@ -237,5 +237,7 @@ def to_underscore(string):
     >>> to_underscore('FooBar')
     'foo_bar'
     """
-    return re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', string).lower()
+    new_string = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', string)
+    new_string = re.sub(r'([a-z\d])([A-Z])', r'\1_\2', new_string)
+    return new_string.lower()
 

@@ -25,6 +25,8 @@ def test_to_underscore():
     assert to_underscore('fooBar') == 'foo_bar'
     assert to_underscore('FooBar42') == 'foo_bar42'
     assert to_underscore('Foo42Bar') == 'foo42_bar'
+    assert to_underscore('FOOBar') == 'foo_bar'
+    assert to_underscore('fooBAR') == 'foo_bar'
 
 
 def test_configure():
