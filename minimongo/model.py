@@ -5,7 +5,7 @@ from bson import DBRef
 from bson import ObjectId
 from minimongo.options import _Options
 from minimongo.collection import DummyCollection
-
+import copy
 
 class ModelBase(type):
     """Metaclass for all models.
@@ -201,14 +201,32 @@ class Model(AttrDict):
         """Update database data with object data."""
         #Allow to update external values as well as the model itself
         if not values:
-            values = self
+	        #Remove the _id and wrap self into a $set statement.
+            self_copy = copy.copy(self)
+            del self_copy._id
+            values =  {'$set': self_copy }
         self.collection.update({'_id': self._id}, values, **kwargs)
+
         return self
 
     def save(self, *args, **kwargs):
         """Save this object to it's mongo collection."""
         self.collection.save(self, *args, **kwargs)
         return self
+
+    def load(self, fields=None, **kwargs):
+        """Allow delayed and partial loading of a document.
+        fields is a dictionary as per the pymongo specs
+
+        self.collection.find_one( self._id, fields={'name': 1} )
+
+        """
+        values = self.collection.find_one( {'_id':self._id}, fields=fields, **kwargs )
+        if values:
+            for k, v in values.iteritems():
+                self[k] = v
+        return self        
+        
 
 
 # Utils.
