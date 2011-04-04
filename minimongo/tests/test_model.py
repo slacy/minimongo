@@ -17,7 +17,7 @@ class TestCollection(Collection):
 class TestModel(Model):
     '''Model class for test cases.'''
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_test'
         indices = (
             Index('x'),
@@ -32,14 +32,14 @@ class TestModel(Model):
 class TestModelCollection(Model):
     '''Model class with a custom collection class.'''
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_collection'
         collection_class = TestCollection
 
 
 class TestModelUnique(Model):
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_unique'
         indices = (
             Index('x', unique=True),
@@ -48,13 +48,13 @@ class TestModelUnique(Model):
 
 class TestDerivedModel(TestModel):
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_derived'
 
 
 class TestNoAutoIndexModel(Model):
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_noidex'
         indices = (
             Index('x'),
@@ -69,13 +69,13 @@ class TestModelInterface(Model):
 
 class TestModelImplementation(TestModelInterface):
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_impl'
 
 
 class TestFieldMapper(Model):
     class Meta:
-        database = 'test'
+        database = 'minimongo_test'
         collection = 'minimongo_mapper'
         field_map = (
             (lambda k,v: k=='x' and isinstance(v, int),
@@ -84,17 +84,17 @@ class TestFieldMapper(Model):
 
 
 def setup():
+    # Make sure we start with a clean, empty DB.
+    TestModel.connection.drop_database(TestModel.database)
+
+    # Create indices up front
     TestModel.auto_index()
     TestModelUnique.auto_index()
 
 
 def teardown():
-    all_models = set(Model.__subclasses__())
-    all_models.add(TestDerivedModel)
-    all_models.add(TestModelImplementation)
-    # all_models.remove(TestModelInterface)
-    map(lambda m: m.collection.drop(), all_models)
-
+    # This will drop the entire minimongo_test database.  Careful!
+    TestModel.connection.drop_database(TestModel.database)
 
 def test_meta():
     assert hasattr(TestModel, '_meta')
@@ -106,7 +106,7 @@ def test_meta():
                  'collection', 'collection_class'):
         assert hasattr(meta, attr)
 
-    assert meta.database == 'test'
+    assert meta.database == 'minimongo_test'
     assert meta.collection == 'minimongo_test'
     assert meta.indices == (Index('x'), )
 
@@ -421,8 +421,8 @@ def test_db_and_collection_names():
     '''Test the methods that return the current class's DB and
     Collection names.'''
     dummy_a = TestModel({'x': 1})
-    assert dummy_a.database.name == 'test'
-    assert TestModel.database.name == 'test'
+    assert dummy_a.database.name == 'minimongo_test'
+    assert TestModel.database.name == 'minimongo_test'
     assert dummy_a.collection.name == 'minimongo_test'
     assert TestModel.collection.name == 'minimongo_test'
 
@@ -432,7 +432,7 @@ def test_derived():
     der = TestDerivedModel()
     der.a_method()
 
-    assert der.database.name == 'test'
+    assert der.database.name == 'minimongo_test'
     assert der.collection.name == 'minimongo_derived'
 
     assert TestDerivedModel.collection.find_one({'x': 123}) == der
@@ -465,7 +465,7 @@ def test_auto_collection_name():
     try:
         class SomeModel(Model):
             class Meta:
-                database = 'test'
+                database = 'minimongo_test'
     except Exception:
         pytest.fail('`collection_name` should\'ve been constructed.')
 
