@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-import re
-from pymongo import Connection
-from bson import DBRef
-from bson import ObjectId
-from minimongo.options import _Options
-from minimongo.collection import DummyCollection
 import copy
+
+import re
+from bson import DBRef, ObjectId
+from minimongo.collection import DummyCollection
+from minimongo.options import _Options
+from pymongo import Connection
+
 
 class ModelBase(type):
     """Metaclass for all models.
@@ -45,9 +46,8 @@ class ModelBase(type):
 
         if not (options.host and options.port and options.database):
             raise Exception(
-                'Model %r improperly configured: %s %s %s' %
-                (name, options.host, options.port, options.database)
-            )
+                'Model %r improperly configured: %s %s %s' % (
+                    name, options.host, options.port, options.database))
 
         # Checking connection pool for an existing connection.
         hostport = options.host, options.port
@@ -89,19 +89,21 @@ class ModelBase(type):
         for index in mcs._meta.indices:
             index.ensure(mcs.collection)
 
+
 class AttrDict(dict):
     def __init__(self, initial=None, **kwargs):
         # Make sure that during initialization, that we recursively apply
         # AttrDict.  Maybe this could be better done with the builtin
         # defaultdict?
         if initial:
-            for k, v in initial.iteritems():
+            for key, value in initial.iteritems():
                 # Can't just say self[k] = v here b/c of recursion.
-                self.__setitem__(k, v)
-        #Process the other arguments (assume they are also default values)
-        #this is to support AttrDict
-        for k, v in kwargs.iteritems():
-                self.__setitem__(k, v)
+                self.__setitem__(key, value)
+
+        # Process the other arguments (assume they are also default values).
+        # This is the same behavior as the regular dict constructor.
+        for key, value in kwargs.iteritems():
+            self.__setitem__(key, value)
 
         super(AttrDict, self).__init__()
 
@@ -186,7 +188,8 @@ class Model(AttrDict):
         If `with_database` is False, the resulting :class:`pymongo.dbref.DBRef`
         won't have a :attr:`database` field.
 
-        Any other parameters will be passed to the DBRef constructor, as per the mongo specs.
+        Any other parameters will be passed to the DBRef constructor, as per
+        the mongo specs.
         """
         if not hasattr(self, '_id'):
             self._id = ObjectId()
@@ -200,12 +203,12 @@ class Model(AttrDict):
 
     def mongo_update(self, values=None, **kwargs):
         """Update database data with object data."""
-        #Allow to update external values as well as the model itself
+        # Allow to update external values as well as the model itself
         if not values:
-	        #Remove the _id and wrap self into a $set statement.
+            # Remove the _id and wrap self into a $set statement.
             self_copy = copy.copy(self)
             del self_copy._id
-            values =  {'$set': self_copy }
+            values = {'$set': self_copy}
         self.collection.update({'_id': self._id}, values, **kwargs)
 
         return self
@@ -216,18 +219,17 @@ class Model(AttrDict):
         return self
 
     def load(self, fields=None, **kwargs):
-        """Allow delayed and partial loading of a document.
-        fields is a dictionary as per the pymongo specs
+        """Allow partial loading of a document.
+        :attr:fields is a dictionary as per the pymongo specs
 
         self.collection.find_one( self._id, fields={'name': 1} )
 
         """
-        values = self.collection.find_one( {'_id':self._id}, fields=fields, **kwargs )
-        if values:
-            for k, v in values.iteritems():
-                self[k] = v
-        return self        
-        
+        values = self.collection.find_one({'_id': self._id},
+                                          fields=fields, **kwargs)
+        # Merge the loaded values with whatever is currently in self.
+        self.update(values)
+        return self
 
 
 # Utils.
@@ -241,4 +243,3 @@ def to_underscore(string):
     new_string = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', string)
     new_string = re.sub(r'([a-z\d])([A-Z])', r'\1_\2', new_string)
     return new_string.lower()
-

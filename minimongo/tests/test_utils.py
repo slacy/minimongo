@@ -118,11 +118,11 @@ def test_attr_dict():
 
 def test_attr_dict_kwargs():
     """Test that attributes can be set as named arguments"""
-    d = AttrDict(x=0,y=1)
+    d = AttrDict(x=0, y=1)
     assert d.x == 0
     assert d.y == 1
-    #We can stil have an initial document and named values
-    #named values take over.
+    # We can stil have an initial document and named values
+    # named values take over.
     e = AttrDict({'x':0, 'y':1}, x=1)
     assert e.x == 1
     assert e.y == 1

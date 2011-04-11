@@ -4,10 +4,11 @@ from __future__ import with_statement
 import operator
 
 import pytest
-from bson import DBRef
-from pymongo.errors import DuplicateKeyError, InvalidDocument
 
+from bson import DBRef
 from minimongo import Collection, Index, Model
+from pymongo.errors import DuplicateKeyError
+
 
 class TestCollection(Collection):
     def custom(self):
@@ -78,7 +79,7 @@ class TestFieldMapper(Model):
         database = 'minimongo_test'
         collection = 'minimongo_mapper'
         field_map = (
-            (lambda k,v: k=='x' and isinstance(v, int),
+            (lambda k, v: k == 'x' and isinstance(v, int),
              lambda v: float(v * (4.0 / 3.0))),
         )
 
@@ -95,6 +96,7 @@ def setup():
 def teardown():
     # This will drop the entire minimongo_test database.  Careful!
     TestModel.connection.drop_database(TestModel.database)
+
 
 def test_meta():
     assert hasattr(TestModel, '_meta')
@@ -130,21 +132,21 @@ def test_dictyness():
 
 def test_creation():
     '''Test simple object creation and querying via find_one.'''
-    dummy_m = TestModel({'x': 1, 'y': 1})
-    dummy_m.z = 1
-    dummy_m.save()
+    object_a = TestModel({'x': 1, 'y': 1})
+    object_a.z = 1
+    object_a.save()
 
-    dummy_n = TestModel.collection.find_one({'x': 1})
+    object_b = TestModel.collection.find_one({'x': 1})
 
     # Make sure that the find_one method returns the right type.
-    assert isinstance(dummy_n, TestModel)
+    assert isinstance(object_b, TestModel)
     # Make sure that the contents are the same.
-    assert dummy_n == dummy_m
+    assert object_b == object_a
 
     # Make sure that our internal representation is what we expect (and
     # no extra fields, etc.)
-    assert dummy_m == {'x': 1, 'y': 1, 'z': 1, '_id': dummy_m._id}
-    assert dummy_n == {'x': 1, 'y': 1, 'z': 1, '_id': dummy_n._id}
+    assert object_a == {'x': 1, 'y': 1, 'z': 1, '_id': object_a._id}
+    assert object_b == {'x': 1, 'y': 1, 'z': 1, '_id': object_b._id}
 
 
 def test_find_one():
@@ -160,13 +162,13 @@ def test_find_one():
 
 
 def test_save_with_arguments():
-    #Manipulate is what inserts the _id on save if it is missing
-    model = TestModel( foo=0 )
+    # Manipulate is what inserts the _id on save if it is missing
+    model = TestModel(foo=0)
     model.save(manipulate=False)
     with pytest.raises(AttributeError):
-        _id = model._id
-    #but the object was actually saved
-    model = TestModel.collection.find_one({'foo':0})
+        _value = model._id
+    # but the object was actually saved
+    model = TestModel.collection.find_one({'foo': 0})
     assert model.foo == 0
 
 
@@ -174,40 +176,66 @@ def test_mongo_update():
     """Test update. note that update does not sync back the server copy."""
     model = TestModel(counter=10, x=0, y=1)
     model.save()
-    #Update will not delete missing attributes
+
+    # NOTE: These tests below could be thought of outlining existing
+    # edge-case behavior (i.e. they're bugs) and they should be fixed and
+    # the behavior made more correct/consistent.
+
+    # Update will not delete missing attributes, so at this point our
+    # local copy is out of sync with what's on the server.
     model.y = 1
     del model.x
     model.update()
     assert model.get('x', 'foo') == 'foo'
-    #$inc changes the server, not the local copy
-    model.mongo_update( {'$inc': {'counter':1}} )
+
+    # $inc changes the server, not the local copy.
+    model.mongo_update({'$inc': {'counter': 1}})
     assert model.counter == 10
-    #reload the model
-    model = TestModel.collection.find_one( {'_id': model._id})
+
+    # reload the model.  This will pull in the "true" document from the server.
+    model = TestModel.collection.find_one({'_id': model._id})
     assert model.counter == 11
     assert model.x == 0
     assert model.y == 1
-    
+
 
 def test_load():
-    """Delayed and partial loading"""
-    #a and b are 2 instances of the same document
-    a = TestModel(x=0,y=1).save()
-    b = TestModel(_id=a._id)
+    """Partial loading of documents.x"""
+    # object_a and object_b are 2 instances of the same document
+    object_a = TestModel(x=0, y=1).save()
+    object_b = TestModel(_id=object_a._id)
     with pytest.raises(AttributeError):
-        value = b.x
-    #Partial load. only the x value
-    b.load( fields={'x':1} )
-    assert b.x == a.x
+        _value = object_b.x
+    # Partial load. only the x value
+    object_b.load(fields={'x': 1})
+    assert object_b.x == object_a.x
     with pytest.raises(AttributeError):
-        b.y == a.y
-    #Complete load. change the value first
-    a.x = 2
-    a.save()
-    b.load()
-    assert b.x == 2
-    assert b.y == a.y
-    
+        _value = object_b.y
+
+    # Complete load. change the value first
+    object_a.x = 2
+    object_a.save()
+    object_b.load()
+    assert object_b.x == 2
+    assert object_b.y == object_a.y
+
+
+def test_load_and_field_mapper():
+    object_a = TestFieldMapper(x=12, y=1).save()
+    object_b = TestFieldMapper(_id=object_a._id)
+
+    # X got mapped (multiplied by 4/3 and converted to object_a float)
+    assert object_a.x == 16.0
+    assert object_a.y == 1
+
+    object_b.load(fields={'x': 1})
+    assert object_b.x == 16.0
+    with pytest.raises(AttributeError):
+        _value = object_b.y  # object_b does not have the 'y' field
+
+    object_b.load()
+    assert object_b.y == 1
+
 
 def test_index_existance():
     '''Test that indexes were created properly.'''
@@ -246,10 +274,10 @@ def test_unique_constraint():
 
 def test_queries():
     '''Test some more complex query forms.'''
-    dummy_a = TestModel({'x': 1, 'y': 1}).save()
-    dummy_b = TestModel({'x': 1, 'y': 2}).save()
-    dummy_c = TestModel({'x': 2, 'y': 2}).save()
-    dummy_d = TestModel({'x': 2, 'y': 1}).save()
+    object_a = TestModel({'x': 1, 'y': 1}).save()
+    object_b = TestModel({'x': 1, 'y': 2}).save()
+    object_c = TestModel({'x': 2, 'y': 2}).save()
+    object_d = TestModel({'x': 2, 'y': 1}).save()
 
     found_x1 = TestModel.collection.find({'x': 1})
     found_y1 = TestModel.collection.find({'y': 1})
@@ -263,65 +291,66 @@ def test_queries():
     # derived Model types, not just a straight dict.
     assert isinstance(list_x1[0], TestModel)
 
-    assert dummy_a in list_x1
-    assert dummy_b in list_x1
-    assert dummy_a in list_y1
-    assert dummy_d in list_y1
-    assert dummy_c == list_x2y2[0]
+    assert object_a in list_x1
+    assert object_b in list_x1
+    assert object_a in list_y1
+    assert object_d in list_y1
+    assert object_c == list_x2y2[0]
+
 
 def test_deletion():
     '''Test deleting an object from a collection.'''
-    dummy_m = TestModel()
-    dummy_m.x = 100
-    dummy_m.y = 200
-    dummy_m.save()
+    object_a = TestModel()
+    object_a.x = 100
+    object_a.y = 200
+    object_a.save()
 
-    dummy_n = TestModel.collection.find({'x': 100})
-    assert dummy_n.count() == 1
+    object_b = TestModel.collection.find({'x': 100})
+    assert object_b.count() == 1
 
-    map(operator.methodcaller('remove'), dummy_n)
+    map(operator.methodcaller('remove'), object_b)
 
-    dummy_m = TestModel.collection.find({'x': 100})
-    assert dummy_m.count() == 0
+    object_a = TestModel.collection.find({'x': 100})
+    assert object_a.count() == 0
 
 
 def test_complex_types():
     '''Test lists as types.'''
-    dummy_m = TestModel()
-    dummy_m.l = ['a', 'b', 'c']
-    dummy_m.x = 1
-    dummy_m.y = {'m': 'n',
-                 'o': 'p'}
-    dummy_m['z'] = {'q': 'r',
-                    's': {'t': 'u'}}
+    object_a = TestModel()
+    object_a.l = ['a', 'b', 'c']
+    object_a.x = 1
+    object_a.y = {'m': 'n',
+                  'o': 'p'}
+    object_a['z'] = {'q': 'r',
+                     's': {'t': 'u'}}
 
-    dummy_m.save()
+    object_a.save()
 
-    dummy_n = TestModel.collection.find_one({'x': 1})
+    object_b = TestModel.collection.find_one({'x': 1})
 
     # Make sure the internal lists are equivalent.
-    assert dummy_m.l == dummy_n.l
+    assert object_a.l == object_b.l
 
     # Make sure that everything is of the right type, including the types of
     # the nested fields that we read back from the DB, and that we are able
     # to access fields as both attrs and items.
-    assert type(dummy_m) == type(dummy_n) == TestModel
-    assert isinstance(dummy_m.y, dict)
-    assert isinstance(dummy_n.y, dict)
-    assert isinstance(dummy_m['z'], dict)
-    assert isinstance(dummy_n['z'], dict)
-    assert isinstance(dummy_m.z, dict)
-    assert isinstance(dummy_n.z, dict)
+    assert type(object_a) == type(object_b) == TestModel
+    assert isinstance(object_a.y, dict)
+    assert isinstance(object_b.y, dict)
+    assert isinstance(object_a['z'], dict)
+    assert isinstance(object_b['z'], dict)
+    assert isinstance(object_a.z, dict)
+    assert isinstance(object_b.z, dict)
 
     # These nested fields are actually instances of AttrDict, which is why
     # we can access as both attributes and values.  Thus, the "isinstance"
     # dict check.
-    assert isinstance(dummy_m['z']['s'], dict)
-    assert isinstance(dummy_n['z']['s'], dict)
-    assert isinstance(dummy_m.z.s, dict)
-    assert isinstance(dummy_n.z.s, dict)
+    assert isinstance(object_a['z']['s'], dict)
+    assert isinstance(object_b['z']['s'], dict)
+    assert isinstance(object_a.z.s, dict)
+    assert isinstance(object_b.z.s, dict)
 
-    assert dummy_m == dummy_n
+    assert object_a == object_b
 
 
 def test_type_from_cursor():
@@ -343,54 +372,54 @@ def test_type_from_cursor():
 
 def test_delete_field():
     '''Test deleting a single field from an object.'''
-    dummy_m = TestModel({'x': 1, 'y': 2})
-    dummy_m.save()
-    del dummy_m.x
-    dummy_m.save()
+    object_a = TestModel({'x': 1, 'y': 2})
+    object_a.save()
+    del object_a.x
+    object_a.save()
 
     assert TestModel.collection.find_one({'y': 2}) == \
-           {'y': 2, '_id': dummy_m._id}
+           {'y': 2, '_id': object_a._id}
 
 
 def test_count_and_fetch():
     '''Test counting methods on Cursors. '''
-    dummy_d = TestModel({'x': 1, 'y': 4}).save()
-    dummy_b = TestModel({'x': 1, 'y': 2}).save()
-    dummy_a = TestModel({'x': 1, 'y': 1}).save()
-    dummy_c = TestModel({'x': 1, 'y': 3}).save()
+    object_d = TestModel({'x': 1, 'y': 4}).save()
+    object_b = TestModel({'x': 1, 'y': 2}).save()
+    object_a = TestModel({'x': 1, 'y': 1}).save()
+    object_c = TestModel({'x': 1, 'y': 3}).save()
 
     find_x1 = TestModel.collection.find({'x': 1}).sort('y')
     assert find_x1.count() == 4
 
     list_x1 = list(find_x1)
-    assert list_x1[0] == dummy_a
-    assert list_x1[1] == dummy_b
-    assert list_x1[2] == dummy_c
-    assert list_x1[3] == dummy_d
+    assert list_x1[0] == object_a
+    assert list_x1[1] == object_b
+    assert list_x1[2] == object_c
+    assert list_x1[3] == object_d
 
 
 def test_fetch_and_limit():
     '''Test counting methods on Cursors. '''
-    dummy_a = TestModel({'x': 1, 'y': 1}).save()
-    dummy_b = TestModel({'x': 1, 'y': 2}).save()
+    object_a = TestModel({'x': 1, 'y': 1}).save()
+    object_b = TestModel({'x': 1, 'y': 2}).save()
     TestModel({'x': 1, 'y': 4}).save()
     TestModel({'x': 1, 'y': 3}).save()
 
     find_x1 = TestModel.collection.find({'x': 1}).limit(2).sort('y')
 
     assert find_x1.count(with_limit_and_skip=True) == 2
-    assert dummy_a in find_x1
-    assert dummy_b in find_x1
+    assert object_a in find_x1
+    assert object_b in find_x1
 
 
 def test_dbref():
     '''Test generation of DBRef objects, and querying via DBRef
     objects.'''
-    dummy_a = TestModel({'x': 1, 'y': 999}).save()
-    ref_a = dummy_a.dbref()
+    object_a = TestModel({'x': 1, 'y': 999}).save()
+    ref_a = object_a.dbref()
 
-    dummy_b = TestModel.collection.from_dbref(ref_a)
-    assert dummy_a == dummy_b
+    object_b = TestModel.collection.from_dbref(ref_a)
+    assert object_a == object_b
 
     # Making sure, that a ValueError is raised for DBRefs from a
     # 'foreign' collection or database.
@@ -403,39 +432,39 @@ def test_dbref():
         TestModel.collection.from_dbref(ref_a)
 
     # Testing ``with_database`` option.
-    ref_a = dummy_a.dbref(with_database=False)
+    ref_a = object_a.dbref(with_database=False)
     assert ref_a.database is None
 
-    ref_a = dummy_a.dbref(with_database=True)
+    ref_a = object_a.dbref(with_database=True)
     assert ref_a.database is not None
 
-    ref_a = dummy_a.dbref()  # True by default.
+    ref_a = object_a.dbref()  # True by default.
     assert ref_a.database is not None
-    
+
     # Testing additional fields
-    ref_a = dummy_a.dbref(name="foo")
+    ref_a = object_a.dbref(name="foo")
     assert ref_a.name == 'foo'
 
 
 def test_db_and_collection_names():
     '''Test the methods that return the current class's DB and
     Collection names.'''
-    dummy_a = TestModel({'x': 1})
-    assert dummy_a.database.name == 'minimongo_test'
+    object_a = TestModel({'x': 1})
+    assert object_a.database.name == 'minimongo_test'
     assert TestModel.database.name == 'minimongo_test'
-    assert dummy_a.collection.name == 'minimongo_test'
+    assert object_a.collection.name == 'minimongo_test'
     assert TestModel.collection.name == 'minimongo_test'
 
 
 def test_derived():
     '''Test Models that are derived from other models.'''
-    der = TestDerivedModel()
-    der.a_method()
+    derived_object = TestDerivedModel()
+    derived_object.a_method()
 
-    assert der.database.name == 'minimongo_test'
-    assert der.collection.name == 'minimongo_derived'
+    assert derived_object.database.name == 'minimongo_test'
+    assert derived_object.collection.name == 'minimongo_derived'
 
-    assert TestDerivedModel.collection.find_one({'x': 123}) == der
+    assert TestDerivedModel.collection.find_one({'x': 123}) == derived_object
 
 
 def test_collection_class():
@@ -495,7 +524,8 @@ def test_interface_models():
     test_model_instance.x = 123
     test_model_instance.save()
 
-    test_model_instance_2 = TestModelImplementation.collection.find_one({'x': 123})
+    test_model_instance_2 = TestModelImplementation.collection.find_one(
+        {'x': 123})
     assert test_model_instance == test_model_instance_2
 
 
@@ -530,11 +560,11 @@ def test_field_mapper():
 
 
 def test_slicing():
-    object_a = TestModel({'x':1}).save()
-    object_b = TestModel({'x':2}).save()
-    object_c = TestModel({'x':3}).save()
-    object_d = TestModel({'x':4}).save()
-    object_e = TestModel({'x':5}).save()
+    object_a = TestModel({'x': 1}).save()
+    object_b = TestModel({'x': 2}).save()
+    object_c = TestModel({'x': 3}).save()
+    object_d = TestModel({'x': 4}).save()
+    object_e = TestModel({'x': 5}).save()
 
     objects = TestModel.collection.find().sort('x')
     obj_list = list(objects[:2])
