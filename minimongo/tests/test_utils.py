@@ -25,6 +25,8 @@ def test_to_underscore():
     assert to_underscore('fooBar') == 'foo_bar'
     assert to_underscore('FooBar42') == 'foo_bar42'
     assert to_underscore('Foo42Bar') == 'foo42_bar'
+    assert to_underscore('FOOBar') == 'foo_bar'
+    assert to_underscore('fooBAR') == 'foo_bar'
 
 
 def test_configure():
@@ -112,6 +114,22 @@ def test_attr_dict():
     assert isinstance(e, dict)
     assert isinstance(e.y, dict)
     assert isinstance(e['y'], dict)
+
+
+def test_attr_dict_kwargs():
+    """Test that attributes can be set as named arguments"""
+    d = AttrDict(x=0,y=1)
+    assert d.x == 0
+    assert d.y == 1
+    #We can stil have an initial document and named values
+    #named values take over.
+    e = AttrDict({'x':0, 'y':1}, x=1)
+    assert e.x == 1
+    assert e.y == 1
+    #We can pass a dictionary as a value
+    f = AttrDict( x = {'a':1 })
+    assert f.x.a == 1
+
 
 def test_attrdict_del():
     f = AttrDict()

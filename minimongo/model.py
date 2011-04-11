@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import re
 from pymongo import Connection
-from pymongo.dbref import DBRef
-from pymongo.objectid import ObjectId
+from bson import DBRef
+from bson import ObjectId
 from minimongo.options import _Options
 from minimongo.collection import DummyCollection
-
+import copy
 
 class ModelBase(type):
     """Metaclass for all models.
@@ -90,7 +90,7 @@ class ModelBase(type):
             index.ensure(mcs.collection)
 
 class AttrDict(dict):
-    def __init__(self, initial=None):
+    def __init__(self, initial=None, **kwargs):
         # Make sure that during initialization, that we recursively apply
         # AttrDict.  Maybe this could be better done with the builtin
         # defaultdict?
@@ -98,6 +98,11 @@ class AttrDict(dict):
             for k, v in initial.iteritems():
                 # Can't just say self[k] = v here b/c of recursion.
                 self.__setitem__(k, v)
+        #Process the other arguments (assume they are also default values)
+        #this is to support AttrDict
+        for k, v in kwargs.iteritems():
+                self.__setitem__(k, v)
+
         super(AttrDict, self).__init__()
 
     # These lines make this object behave both like a dict (x['y']) and like
@@ -175,31 +180,54 @@ class Model(AttrDict):
 
         super(Model, self).__setitem__(key, value)
 
-    def dbref(self, with_database=True):
+    def dbref(self, with_database=True, **kwargs):
         """Returns a DBRef for the current object.
 
         If `with_database` is False, the resulting :class:`pymongo.dbref.DBRef`
         won't have a :attr:`database` field.
+
+        Any other parameters will be passed to the DBRef constructor, as per the mongo specs.
         """
         if not hasattr(self, '_id'):
             self._id = ObjectId()
 
         database = self._meta.database if with_database else None
-        return DBRef(self._meta.collection, self._id, database)
+        return DBRef(self._meta.collection, self._id, database, **kwargs)
 
     def remove(self):
         """Remove this object from the database."""
         return self.collection.remove(self._id)
 
-    def mongo_update(self):
+    def mongo_update(self, values=None, **kwargs):
         """Update database data with object data."""
-        self.collection.update({'_id': self._id}, self)
+        #Allow to update external values as well as the model itself
+        if not values:
+	        #Remove the _id and wrap self into a $set statement.
+            self_copy = copy.copy(self)
+            del self_copy._id
+            values =  {'$set': self_copy }
+        self.collection.update({'_id': self._id}, values, **kwargs)
+
         return self
 
     def save(self, *args, **kwargs):
         """Save this object to it's mongo collection."""
         self.collection.save(self, *args, **kwargs)
         return self
+
+    def load(self, fields=None, **kwargs):
+        """Allow delayed and partial loading of a document.
+        fields is a dictionary as per the pymongo specs
+
+        self.collection.find_one( self._id, fields={'name': 1} )
+
+        """
+        values = self.collection.find_one( {'_id':self._id}, fields=fields, **kwargs )
+        if values:
+            for k, v in values.iteritems():
+                self[k] = v
+        return self        
+        
 
 
 # Utils.
@@ -210,5 +238,7 @@ def to_underscore(string):
     >>> to_underscore('FooBar')
     'foo_bar'
     """
-    return re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', string).lower()
+    new_string = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', string)
+    new_string = re.sub(r'([a-z\d])([A-Z])', r'\1_\2', new_string)
+    return new_string.lower()
 

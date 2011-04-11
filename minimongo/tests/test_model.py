@@ -4,8 +4,8 @@ from __future__ import with_statement
 import operator
 
 import pytest
-from pymongo.dbref import DBRef
-from pymongo.errors import DuplicateKeyError
+from bson import DBRef
+from pymongo.errors import DuplicateKeyError, InvalidDocument
 
 from minimongo import Collection, Index, Model
 
@@ -159,6 +159,56 @@ def test_find_one():
     assert found == model
 
 
+def test_save_with_arguments():
+    #Manipulate is what inserts the _id on save if it is missing
+    model = TestModel( foo=0 )
+    model.save(manipulate=False)
+    with pytest.raises(AttributeError):
+        _id = model._id
+    #but the object was actually saved
+    model = TestModel.collection.find_one({'foo':0})
+    assert model.foo == 0
+
+
+def test_mongo_update():
+    """Test update. note that update does not sync back the server copy."""
+    model = TestModel(counter=10, x=0, y=1)
+    model.save()
+    #Update will not delete missing attributes
+    model.y = 1
+    del model.x
+    model.update()
+    assert model.get('x', 'foo') == 'foo'
+    #$inc changes the server, not the local copy
+    model.mongo_update( {'$inc': {'counter':1}} )
+    assert model.counter == 10
+    #reload the model
+    model = TestModel.collection.find_one( {'_id': model._id})
+    assert model.counter == 11
+    assert model.x == 0
+    assert model.y == 1
+    
+
+def test_load():
+    """Delayed and partial loading"""
+    #a and b are 2 instances of the same document
+    a = TestModel(x=0,y=1).save()
+    b = TestModel(_id=a._id)
+    with pytest.raises(AttributeError):
+        value = b.x
+    #Partial load. only the x value
+    b.load( fields={'x':1} )
+    assert b.x == a.x
+    with pytest.raises(AttributeError):
+        b.y == a.y
+    #Complete load. change the value first
+    a.x = 2
+    a.save()
+    b.load()
+    assert b.x == 2
+    assert b.y == a.y
+    
+
 def test_index_existance():
     '''Test that indexes were created properly.'''
     indices = TestModel.collection.index_information()
@@ -175,7 +225,7 @@ def test_unique_index():
     # one of the inserts (silently, I guess).
     assert TestModelUnique.collection.find().count() == 1
 
-    # Even if we use dieferent values for y, it's still only one object:
+    # Even if we use different values for y, it's still only one object:
     TestModelUnique({'x': 2, 'y': 1}).save()
     TestModelUnique({'x': 2, 'y': 2}).save()
     # There are now 2 objects, one with x=1, one with x=2.
@@ -218,7 +268,6 @@ def test_queries():
     assert dummy_a in list_y1
     assert dummy_d in list_y1
     assert dummy_c == list_x2y2[0]
-
 
 def test_deletion():
     '''Test deleting an object from a collection.'''
@@ -362,6 +411,10 @@ def test_dbref():
 
     ref_a = dummy_a.dbref()  # True by default.
     assert ref_a.database is not None
+    
+    # Testing additional fields
+    ref_a = dummy_a.dbref(name="foo")
+    assert ref_a.name == 'foo'
 
 
 def test_db_and_collection_names():
