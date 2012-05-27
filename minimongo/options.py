@@ -23,7 +23,7 @@ def configure(module=None, prefix='MONGODB_', **kwargs):
         # to _Options' values, ex: MONGODB_PORT ==> port.
         attrs = module.__dict__.iteritems()
         attrs = ((attr.replace(prefix, '').lower(), value)
-                 for attr, value in attrs if attr.startwith(prefix))
+                 for attr, value in attrs if attr.startswith(prefix))
 
         _Options._configure(**dict(attrs))
     elif kwargs:
