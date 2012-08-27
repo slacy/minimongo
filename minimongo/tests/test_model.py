@@ -240,7 +240,8 @@ def test_load_and_field_mapper():
 def test_index_existance():
     '''Test that indexes were created properly.'''
     indices = TestModel.collection.index_information()
-    assert indices['x_1'] == {'key': [('x', 1)]}
+    assert (indices['x_1'] == {'key': [('x', 1)]})\
+        or (indices['x_1'] == {u'key': [(u'x', 1)], u'v': 1})
 
 
 def test_unique_index():
@@ -504,14 +505,19 @@ def test_auto_collection_name():
 def test_no_auto_index():
     TestNoAutoIndexModel({'x': 1}).save()
 
-    assert TestNoAutoIndexModel.collection.index_information() == \
-           {u'_id_': {u'key': [(u'_id', 1)]}}
+    assert (TestNoAutoIndexModel.collection.index_information() == \
+           {u'_id_': {u'key': [(u'_id', 1)]}})\
+           or (TestNoAutoIndexModel.collection.index_information() ==\
+           {u'_id_': {u'key': [(u'_id', 1)], u'v': 1}})
 
     TestNoAutoIndexModel.auto_index()
 
-    assert TestNoAutoIndexModel.collection.index_information() == \
-           {u'_id_': {u'key': [(u'_id', 1)]},
-            u'x_1': {u'key': [(u'x', 1)]}}
+    assert (TestNoAutoIndexModel.collection.index_information() == \
+           {u'_id_': {u'key': [(u'_id', 1)],  u'v': 1},
+            u'x_1': {u'key': [(u'x', 1)],  u'v': 1}})\
+            or (TestNoAutoIndexModel.collection.index_information() == \
+            {u'_id_': {u'key': [(u'_id', 1)]},
+            u'x_1': {u'key': [(u'x', 1)]}})
 
 
 def test_interface_models():
