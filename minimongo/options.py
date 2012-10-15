@@ -47,6 +47,10 @@ class _Options(object):
     database = None
     collection = None
 
+    # Authentication credentials
+    username = None
+    password = None
+
     # Should indices be created at startup?
     auto_index = True
 
