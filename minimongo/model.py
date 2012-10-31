@@ -64,6 +64,8 @@ class ModelBase(type):
         new_class._meta = options
         new_class.connection = connection
         new_class.database = connection[options.database]
+        if options.username and options.password:
+            new_class.database.authenticate(options.username, options.password)
         new_class.collection = options.collection_class(
             new_class.database, options.collection, document_class=new_class)
 
