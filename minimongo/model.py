@@ -5,7 +5,7 @@ import re
 from bson import DBRef, ObjectId
 from minimongo.collection import DummyCollection
 from minimongo.options import _Options
-from pymongo import Connection
+from pymongo import MongoClient as Connection
 
 
 class ModelBase(type):
