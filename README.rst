@@ -39,7 +39,9 @@ Example
 -------
 
 Here's a very brief example of creating an object, querying for it, modifying
-a field, and then saving it back again::
+a field, and then saving it back again:
+
+.. code:: python
 
     from minimongo import Model, Index
 
