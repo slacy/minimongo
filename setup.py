@@ -17,7 +17,8 @@ DESCRIPTION = "Minimal database Model management for MongoDB"
 try:
     LONG_DESCRIPTION = open(os.path.join(here, "README.rst")).read()
 except IOError:
-    pass
+    print("Warning: IOError raised: cannot open README.rst.")
+    LONG_DESCRIPTION = DESCRIPTION
 
 
 CLASSIFIERS = (
