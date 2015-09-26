@@ -23,9 +23,11 @@ except IOError:
 
 CLASSIFIERS = (
     "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: BSD License"
     "Intended Audience :: Developers",
-    "Programming Language :: Python",
     "Topic :: Database",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2",
 )
 
 
