@@ -51,7 +51,7 @@ setup(name="minimongo",
       cmdclass={"test": PyTest},
       platforms=["any"],
 
-      install_requires = ["pymongo>=2.4"],
+      install_requires = ["pymongo<=2.8", "six"],
       zip_safe=False,
       include_package_data=True,
 
@@ -61,5 +61,5 @@ setup(name="minimongo",
       long_description=LONG_DESCRIPTION,
       classifiers=CLASSIFIERS,
       keywords=["mongo", "mongodb", "pymongo", "orm"],
-      url="http://github.com/slacy/minimongo",
+      url="https://github.com/slacy/minimongo",
 )

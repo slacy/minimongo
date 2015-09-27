@@ -9,7 +9,7 @@ class Index(object):
         self._kwargs = kwargs
 
     def __eq__(self, other):
-        """Two indices are equal, when the have equal arguments.
+        """Two indices are equal, when they have equal arguments.
 
         >>> Index(42, foo='bar') == Index(42, foo='bar')
         True

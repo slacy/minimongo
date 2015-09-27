@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+
 from types import ModuleType
 
 import pytest
 
-from minimongo import Model, configure, AttrDict
-from minimongo.options import _Options
-from minimongo.model import to_underscore
+from .. import Model, configure, AttrDict
+from ..model import to_underscore
+from ..options import _Options
 
 
 def test_nometa():

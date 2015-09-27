@@ -1,5 +1,10 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+
 import types
-from minimongo.collection import Collection
+
+from .collection import Collection
 
 
 def configure(module=None, prefix='MONGODB_', **kwargs):
@@ -21,9 +26,9 @@ def configure(module=None, prefix='MONGODB_', **kwargs):
     if module is not None and isinstance(module, types.ModuleType):
         # Search module for MONGODB_* attributes and converting them
         # to _Options' values, ex: MONGODB_PORT ==> port.
-        attrs = module.__dict__.iteritems()
         attrs = ((attr.replace(prefix, '').lower(), value)
-                 for attr, value in attrs if attr.startswith(prefix))
+                 for attr, value in vars(module).items()
+                 if attr.startswith(prefix))
 
         _Options._configure(**dict(attrs))
     elif kwargs:
@@ -76,5 +81,5 @@ class _Options(object):
     @classmethod
     def _configure(cls, **defaults):
         """Updates class-level defaults for :class:`_Options` container."""
-        for attr, value in defaults.iteritems():
-            setattr(cls, attr, value)
+        for attr in defaults:
+            setattr(cls, attr, defaults[attr])

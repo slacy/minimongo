@@ -3,6 +3,7 @@
 from pymongo.collection import Collection as PyMongoCollection
 from pymongo.cursor import Cursor as PyMongoCursor
 
+
 class Cursor(PyMongoCursor):
 
     def __init__(self, *args, **kwargs):
@@ -10,8 +11,12 @@ class Cursor(PyMongoCursor):
         super(Cursor, self).__init__(*args, **kwargs)
 
     def next(self):
-        data = super(Cursor, self).next()
-        return self._wrapper_class(data)
+        return self._wrapper_class(super(Cursor, self).next())
+
+    # XXX simple alias won't work here because of the super call.
+
+    def __next__(self):
+        return self._wrapper_class(super(Cursor, self).__next__())
 
     def __getitem__(self, index):
         if isinstance(index, slice):

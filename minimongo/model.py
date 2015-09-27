@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
-import copy
+from __future__ import absolute_import
 
+import copy
 import re
+
+import six
 from bson import DBRef, ObjectId
-from minimongo.collection import DummyCollection
-from minimongo.options import _Options
 from pymongo import MongoClient as Connection
+
+from .collection import DummyCollection
+from .options import _Options
 
 
 class ModelBase(type):
@@ -32,8 +36,8 @@ class ModelBase(type):
         except AttributeError:
             meta = None
         else:
-            delattr(new_class, 'Meta')  # Won't need the original metadata
-                                        # container anymore.
+            # Won't need the original metadata container anymore.
+            delattr(new_class, 'Meta')
 
         options = _Options(meta)
         options.collection = options.collection or to_underscore(name)
@@ -100,13 +104,13 @@ class AttrDict(dict):
         # AttrDict.  Maybe this could be better done with the builtin
         # defaultdict?
         if initial:
-            for key, value in initial.iteritems():
+            for key, value in six.iteritems(initial):
                 # Can't just say self[k] = v here b/c of recursion.
                 self.__setitem__(key, value)
 
         # Process the other arguments (assume they are also default values).
         # This is the same behavior as the regular dict constructor.
-        for key, value in kwargs.iteritems():
+        for key, value in six.iteritems(kwargs):
             self.__setitem__(key, value)
 
         super(AttrDict, self).__init__()
@@ -143,6 +147,8 @@ class AttrDict(dict):
         return super(AttrDict, self).__setitem__(key, new_value)
 
 
+@six.python_2_unicode_compatible
+@six.add_metaclass(ModelBase)
 class Model(AttrDict):
     """Base class for all Minimongo objects.
 
@@ -159,15 +165,9 @@ class Model(AttrDict):
     >>> foo.bar == 42
     True
     """
-
-    __metaclass__ = ModelBase
-
     def __str__(self):
         return '%s(%s)' % (self.__class__.__name__,
                            super(Model, self).__str__())
-
-    def __unicode__(self):
-        return str(self).decode('utf-8')
 
     def __setitem__(self, key, value):
         # Go through the defined list of field mappers.  If the fild

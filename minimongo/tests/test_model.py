@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
 
-import operator
+from __future__ import absolute_import, unicode_literals
 
 import pytest
-
 from bson import DBRef
-from minimongo import Collection, Index, Model
 from pymongo.errors import DuplicateKeyError
+
+from .. import Collection, Index, Model
 
 
 class TestCollection(Collection):
@@ -166,7 +165,8 @@ def test_save_with_arguments():
     model = TestModel(foo=0)
     model.save(manipulate=False)
     with pytest.raises(AttributeError):
-        _value = model._id
+        model._id
+
     # but the object was actually saved
     model = TestModel.collection.find_one({'foo': 0})
     assert model.foo == 0
@@ -205,12 +205,13 @@ def test_load():
     object_a = TestModel(x=0, y=1).save()
     object_b = TestModel(_id=object_a._id)
     with pytest.raises(AttributeError):
-        _value = object_b.x
+        object_b.x
+
     # Partial load. only the x value
     object_b.load(fields={'x': 1})
     assert object_b.x == object_a.x
     with pytest.raises(AttributeError):
-        _value = object_b.y
+        object_b.y
 
     # Complete load. change the value first
     object_a.x = 2
@@ -231,7 +232,7 @@ def test_load_and_field_mapper():
     object_b.load(fields={'x': 1})
     assert object_b.x == 16.0
     with pytest.raises(AttributeError):
-        _value = object_b.y  # object_b does not have the 'y' field
+        object_b.y  # object_b does not have the 'y' field
 
     object_b.load()
     assert object_b.y == 1
@@ -240,15 +241,19 @@ def test_load_and_field_mapper():
 def test_index_existance():
     '''Test that indexes were created properly.'''
     indices = TestModel.collection.index_information()
-    assert (indices['x_1'] == {'key': [('x', 1)]})\
-        or (indices['x_1'] == {u'key': [(u'x', 1)], u'v': 1})
+    # Even though PyMongo documents that indices should not contain
+    # "ns", the seem to do in practice.
+    assert "x_1" in indices
+    assert indices["x_1"]["key"] == [("x", 1)]
 
 
+@pytest.mark.xfail(reason="drop_dups is unsupported since MongoDB 2.7.5")
 def test_unique_index():
     '''Test behavior of indices with unique=True'''
     # This will work (y is undefined)
     TestModelUnique({'x': 1}).save()
     TestModelUnique({'x': 1}).save()
+
     # Assert that there's only one object in the collection, even though
     # we inserted two.  The uniqueness constraint on the index has dropped
     # one of the inserts (silently, I guess).
@@ -308,8 +313,7 @@ def test_deletion():
 
     object_b = TestModel.collection.find({'x': 100})
     assert object_b.count() == 1
-
-    map(operator.methodcaller('remove'), object_b)
+    object_b[0].remove()
 
     object_a = TestModel.collection.find({'x': 100})
     assert object_a.count() == 0
@@ -323,7 +327,7 @@ def test_complex_types():
     object_a.y = {'m': 'n',
                   'o': 'p'}
     object_a['z'] = {'q': 'r',
-                     's': {'t': 'u'}}
+                     's': {'t': ''}}
 
     object_a.save()
 
@@ -355,11 +359,8 @@ def test_complex_types():
 
 
 def test_type_from_cursor():
-    object_a = TestModel({'x':1}).save()
-    object_b = TestModel({'x':2}).save()
-    object_c = TestModel({'x':3}).save()
-    object_d = TestModel({'x':4}).save()
-    object_e = TestModel({'x':5}).save()
+    for i in range(6):
+        TestModel({'x': i}).save()
 
     objects = TestModel.collection.find()
     for single_object in objects:
@@ -368,7 +369,7 @@ def test_type_from_cursor():
         assert isinstance(single_object, dict)
         assert isinstance(single_object, object)
         assert isinstance(single_object, TestModel)
-        assert type(single_object['x']) == int
+        assert isinstance(single_object['x'], int)
 
 
 def test_delete_field():
@@ -378,8 +379,9 @@ def test_delete_field():
     del object_a.x
     object_a.save()
 
-    assert TestModel.collection.find_one({'y': 2}) == \
-           {'y': 2, '_id': object_a._id}
+    assert TestModel.collection.find_one({'y': 2}) == {
+        'y': 2, '_id': object_a._id
+    }
 
 
 def test_count_and_fetch():
@@ -476,19 +478,11 @@ def test_collection_class():
     assert model.collection.custom() == 'It works!'
 
 
-def test_str_and_unicode():
+def test_str():
     assert str(TestModel()) == 'TestModel({})'
     assert str(TestModel({'foo': 'bar'})) == 'TestModel({\'foo\': \'bar\'})'
 
-    assert unicode(TestModel({'foo': 'bar'})) == \
-           u'TestModel({\'foo\': \'bar\'})'
-
-    # __unicode__() doesn't decode any bytestring values to unicode,
-    # leaving it up to the user.
-    assert unicode(TestModel({'foo': '←'})) ==  \
-           u'TestModel({\'foo\': \'\\xe2\\x86\\x90\'})'
-    assert unicode(TestModel({'foo': u'←'})) == \
-           u'TestModel({\'foo\': u\'\\u2190\'})'
+    assert str(TestModel({'foo': 'bar'})) == 'TestModel({\'foo\': \'bar\'})'
 
 
 def test_auto_collection_name():
@@ -505,19 +499,14 @@ def test_auto_collection_name():
 def test_no_auto_index():
     TestNoAutoIndexModel({'x': 1}).save()
 
-    assert (TestNoAutoIndexModel.collection.index_information() == \
-           {u'_id_': {u'key': [(u'_id', 1)]}})\
-           or (TestNoAutoIndexModel.collection.index_information() ==\
-           {u'_id_': {u'key': [(u'_id', 1)], u'v': 1}})
+    indices = TestNoAutoIndexModel.collection.index_information()
+    assert indices["_id_"]["key"] == [("_id", 1)]
 
     TestNoAutoIndexModel.auto_index()
 
-    assert (TestNoAutoIndexModel.collection.index_information() == \
-           {u'_id_': {u'key': [(u'_id', 1)],  u'v': 1},
-            u'x_1': {u'key': [(u'x', 1)],  u'v': 1}})\
-            or (TestNoAutoIndexModel.collection.index_information() == \
-            {u'_id_': {u'key': [(u'_id', 1)]},
-            u'x_1': {u'key': [(u'x', 1)]}})
+    indices = TestNoAutoIndexModel.collection.index_information()
+    assert indices["_id_"]["key"] == [("_id", 1)]
+    assert indices["x_1"]["key"] == [("x", 1)]
 
 
 def test_interface_models():
