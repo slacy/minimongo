@@ -9,6 +9,7 @@ from bson import DBRef, ObjectId
 from pymongo import MongoClient as Connection
 
 from .collection import DummyCollection
+from .exceptions import DoesNotExist
 from .options import _Options
 
 
@@ -165,6 +166,9 @@ class Model(AttrDict):
     >>> foo.bar == 42
     True
     """
+
+    DoesNotExist = DoesNotExist
+
     def __str__(self):
         return '%s(%s)' % (self.__class__.__name__,
                            super(Model, self).__str__())
@@ -235,6 +239,18 @@ class Model(AttrDict):
         self.update(values)
         return self
 
+    @classmethod
+    def get(cls, **kwargs):
+        """
+        Return a single instance of the Model.
+        Will throw a `DoesNotExist` exception if an instance does not exist.
+        """
+
+        instance = cls.collection.find_one(kwargs)
+        if not instance:
+            raise cls.DoesNotExist()
+
+        return cls(**instance)
 
 # Utils.
 
